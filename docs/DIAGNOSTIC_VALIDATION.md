@@ -4,15 +4,23 @@ This document defines how to validate Naroo's first 6-10 diagnostic questions be
 
 ## Goal
 
-Validate whether the diagnostic can identify where a student got stuck in math well enough that the student trusts the result.
+Validate whether the diagnostic can identify a low-pressure next step well enough that the student is willing to try a 10-minute recovery mission.
+
+Naroo beta should not stop at a diagnostic result. The result must lead directly into the first recovery mission.
 
 The question is not:
 
 > Did the student get a good score?
 
-The question is:
+It is also not:
 
-> Does the student feel, "Yes, this describes where I am stuck, and I would try a 10-minute recovery mission tomorrow"?
+> Will the student publicly admit, "Yes, this is where I am stuck"?
+
+That question can trigger shame or defensiveness, especially if the founder asks directly.
+
+The real question is:
+
+> Does the student feel, "This next 10-minute mission feels like a place I could restart"?
 
 ## Target Participants
 
@@ -93,22 +101,22 @@ Do not collect unnecessary personal data. Do not collect real names unless neede
 
 ## Result Summary Template
 
-After scoring, show a short result:
+After scoring, show a short next-step recommendation:
 
 ```text
 전체가 무너진 게 아니에요.
-지금은 이 3개 연결고리부터 다시 잡으면 돼요.
+다음 10분은 여기서 시작하면 부담이 가장 적어요.
 
-1. [weak link 1]
-   [one plain-language reason]
+1. [recommended start 1]
+   [why this is a low-pressure restart point]
 
-2. [weak link 2]
-   [one plain-language reason]
+2. [recommended start 2]
+   [why this helps the next mission]
 
-3. [weak link 3]
-   [one plain-language reason]
+3. [recommended start 3]
+   [why this is connected to the student's answers]
 
-내일 10분만 한다면 첫 복구 미션은 [concept]부터 시작하면 좋아요.
+첫 복구 미션은 [concept]부터 시작하면 좋아요.
 ```
 
 Avoid:
@@ -116,16 +124,17 @@ Avoid:
 - "기초가 부족합니다."
 - "오답이 많습니다."
 - "수학 상을 다시 하세요."
+- "너는 여기서 막혔습니다."
 - Long reports
 
 ## Feedback Questions
 
 Ask these after showing the result:
 
-1. "이 결과가 네가 수학에서 막힌 지점을 맞게 설명한다고 느껴?"
-2. "틀렸다고 평가받는 느낌이 들었어, 아니면 시작 위치를 찾는 느낌이 들었어?"
-3. "내일 10분짜리 복구 미션이 있으면 해볼 것 같아?"
-4. "결과에서 이상하거나 기분 나쁜 표현이 있었어?"
+1. "이 10분 미션부터 시작하면 부담이 덜할 것 같아?"
+2. "이 결과를 친구가 봐도 기분 나쁘지 않을 것 같아?"
+3. "너라면 다음 미션으로 뭐가 제일 덜 싫어?"
+4. "틀렸다고 평가받는 느낌이 들었어, 아니면 시작 위치를 제안받는 느낌이 들었어?"
 5. "어떤 문제에서 바로 포기하고 싶었어?"
 
 ## Success Criteria
@@ -133,14 +142,14 @@ Ask these after showing the result:
 Build the beta if:
 
 - 5 of 5 students complete the diagnostic, or at least 5 of 10 in a larger test.
-- At least 3 of 5 say the result is mostly accurate.
-- At least 3 of 5 say they would try a 10-minute routine.
+- At least 3 of 5 say the recommended 10-minute mission feels low-pressure enough to try.
+- At least 3 of 5 can choose a next mission without seeming embarrassed or defensive.
 - No participant says the result felt shaming or discouraging.
 
 Do not build more platform features if:
 
 - Students do not understand the questions.
-- Students say the weak-link result feels wrong.
+- Students say the next-step recommendation feels random or unrelated.
 - Students feel judged or embarrassed by the result.
 - Most students would not try the 10-minute routine.
 
@@ -163,7 +172,7 @@ Create a short summary:
 ```text
 Participants tested:
 Completion rate:
-Average result accuracy:
+Next-step acceptance:
 Would try 10-minute routine:
 Top weak links:
 Questions to remove:
@@ -176,6 +185,6 @@ Decision:
 
 ## Decision Rule
 
-If at least 3 students trust the result and would try a 10-minute routine, build the beta.
+If at least 3 students accept the next-step recommendation and would try a 10-minute routine, build the beta.
 
-If fewer than 3 students trust the result, fix the diagnostic before writing more UI or backend code.
+If fewer than 3 students would try the recommended next mission, fix the diagnostic/result framing before writing more UI or backend code.

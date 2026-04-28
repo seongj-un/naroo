@@ -160,8 +160,79 @@ Before sharing the link:
 - Returning social login reuses the same account.
 - Diagnostic attempt persists.
 - Result can be reloaded after closing the browser.
+- Behavior events are recorded for diagnostic start, diagnostic completion, result view, recovery start, hint request, unknown answer, recovery completion, next mission preview, and next-day return.
 - Mobile 375px layout works.
 - Error states do not expose stack traces.
+
+## Staged Rollout
+
+Do not send the first beta link to all testers at once.
+
+Use this rollout:
+
+```text
+1. Founder self-test
+   - Complete login
+   - Complete diagnostic
+   - View result
+   - Start recovery mission
+   - Complete recovery mission
+   - Return after closing browser
+
+2. One trusted student
+   - Watch for OAuth, mobile layout, and confusing copy issues
+   - Fix obvious blockers before inviting more people
+
+3. Three students
+   - Confirm diagnostic completion and recovery start events are recorded
+   - Check whether anyone drops between result and recovery mission
+
+4. Ten students
+   - Run the full private beta only after the first three steps pass
+```
+
+Rollback rule:
+
+If login, diagnostic completion, result view, or recovery start breaks for any tester, pause invitations and fix before adding more students.
+
+## Beta Observability
+
+Record behavior events for the first beta. These events are product learning data, not analytics vanity metrics.
+
+Required events:
+
+```text
+diagnostic_started
+diagnostic_completed
+result_viewed
+recovery_started
+hint_requested
+unknown_selected
+recovery_completed
+next_mission_preview_viewed
+next_day_returned
+```
+
+Each event should include:
+
+```text
+student_id
+attempt_id
+question_set_version
+mission_id
+created_at
+```
+
+Do not include email, access tokens, raw OAuth profile payloads, or free-form student notes in behavior events.
+
+Minimum beta dashboard questions:
+
+- How many students started the diagnostic?
+- How many completed it?
+- How many viewed the result?
+- How many started the first recovery mission?
+- How many completed the first recovery mission?
+- How many returned the next day?
 
 ## Not In Scope For Beta Deployment
 
