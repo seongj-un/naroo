@@ -1,12 +1,12 @@
 # Diagnostic Validation Plan
 
-This document defines how to validate Naroo's first 6-10 diagnostic questions before building too much product around them.
+This document defines how to validate Naroo's first self-selected starting points and 2-3 confirmation questions before building too much product around them.
 
 ## Goal
 
-Validate whether the diagnostic can identify a low-pressure next step well enough that the student is willing to try a 10-minute recovery mission.
+Validate whether a student-selected starting point plus a short confirmation check can identify a low-pressure next step well enough that the student is willing to try a 10-minute recovery mission.
 
-Naroo beta should not stop at a diagnostic result. The result must lead directly into the first recovery mission.
+Naroo beta should not stop at a diagnostic result. The selected area and confirmation result must lead directly into the first recovery mission.
 
 The question is not:
 
@@ -43,7 +43,8 @@ Do not build the full app before this test.
 
 Use:
 
-- 6-10 questions
+- 1 starting-point selection
+- 2-3 confirmation questions for the selected area
 - 3-5 weak-link concepts
 - Short questions
 - No long proofs
@@ -66,7 +67,7 @@ symbol_comfort
 Say this before the student starts:
 
 ```text
-이건 시험이 아니고, 어디서부터 다시 시작하면 좋을지 찾는 진단이야.
+이건 시험이 아니고, 네가 고른 시작 위치가 맞는지 가볍게 확인하는 과정이야.
 모르는 문제는 찍지 말고 "잘 모르겠음"이라고 표시해줘.
 ```
 
@@ -91,6 +92,7 @@ weak_links_predicted:
   - concept 2
   - concept 3
 student_feedback:
+  selected_starting_point:
   result_accuracy: 1-5
   would_try_10_min_routine: yes/no/maybe
   quote:

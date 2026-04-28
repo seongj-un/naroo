@@ -4,26 +4,35 @@ This document defines what Naroo beta is allowed to build first, and what is int
 
 ## Beta Goal
 
-Naroo beta is not "just a diagnostic app." It is a 10-minute math re-entry app that starts with diagnosis.
+Naroo beta is not "just a diagnostic app." It is a 10-minute math re-entry app that starts with a student's own sense of where they are stuck, then lightly checks that starting point.
 
 Naroo beta exists to validate one narrow claim:
 
-> A student who gave up on high-school math can complete a short diagnostic, receive a low-pressure next-step recommendation, and feel able to do one 10-minute recovery routine.
+> A student who gave up on high-school math can create a light account, choose the area that feels blocked or worth studying, complete a short confirmation check, and feel able to do one 10-minute recovery routine.
 
-The beta is not a full math platform. It is a diagnostic-led re-entry experience.
+The beta is not a full math platform. It is a student-intent-led re-entry experience.
 
 ## In Scope
 
-### 1. High-School Math Re-Entry Diagnostic
+### 1. Student Account And Starting Point
 
-- 5-minute diagnostic
-- 6-10 hand-authored questions
+- Lightweight signup before progress is saved
+- Student nickname or display name
+- Current math status
+- Self-selected blocked area or study interest
+- No unnecessary personal data
+- Account identifier for later progress and event logging
+
+### 2. High-School Math Re-Entry Confirmation Check
+
+- 2-3 hand-authored questions based on the selected area
+- "잘 모르겠음" as a valid answer
 - Deterministic scoring
-- 2-3 weak-link result summary
+- 1-3 weak-link or interest-based recommendation
 - Low-pressure next-step recommendation
 - Question-set version tracking
 
-### 2. First 10-Minute Recovery Mission
+### 3. First 10-Minute Recovery Mission
 
 - One 10-minute routine after the diagnostic
 - One weak concept at a time
@@ -32,17 +41,19 @@ The beta is not a full math platform. It is a diagnostic-led re-entry experience
 - Quiet mission tone
 - Next mission preview
 
-### 3. Student Account And Progress
+### 4. Progress Persistence
 
-- Social login
 - Student account persistence
-- Diagnostic attempt history
+- Social login after the local signup/account flow proves useful
+- Confirmation attempt history
 - Saved answers
 - Saved result
 - Next-session hook
 
-### 4. Behavior Event Logging
+### 5. Behavior Event Logging
 
+- `user_signed_up`
+- `starting_point_selected`
 - `diagnostic_started`
 - `diagnostic_completed`
 - `result_viewed`
@@ -55,7 +66,7 @@ The beta is not a full math platform. It is a diagnostic-led re-entry experience
 
 Events must not contain email or unnecessary personal data. Use account/attempt/mission identifiers.
 
-### 5. Private Beta Distribution
+### 6. Private Beta Distribution
 
 - Private web link
 - 5-10 target students
@@ -97,22 +108,25 @@ Return condition: Add after multiple question-set versions exist and non-develop
 
 ## Product Guardrails
 
-- Diagnosis is the entry point, not the whole product.
+- Student intent is the entry point; confirmation questions should support it, not replace it.
 - The first recovery mission is part of the beta, not a later add-on.
 - Story supports persistence, not spectacle.
 - The UI must never feel like a graded exam.
 - The result summary must never shame the student.
 - The result should be framed as a restart recommendation, not a public admission of weakness.
 - Every beta feature must help one of these metrics:
-  - Diagnostic completion
+  - Signup completion
+  - Starting-point selection
+  - Confirmation check completion
   - Next-step acceptance
   - Recovery routine completion
   - Next-day return
-  - Drop-off point between diagnostic, result, and recovery mission
+  - Drop-off point between signup, selected area, confirmation, result, and recovery mission
 
 ## Beta Success Criteria
 
-- 5 of 10 target students complete the diagnostic.
+- 5 of 10 target students complete signup and starting-point selection.
+- 5 of 10 target students complete the short confirmation check.
 - 4 of 10 say the recommended next 10-minute mission feels related and low-pressure.
 - 3 of 10 complete the first recovery routine.
 - 2 of 10 return the next day without being forced.
@@ -123,7 +137,7 @@ Do not expand into Phase 2 until Phase 1 produces enough signal.
 
 Phase 1 -> Phase 2 requires:
 
-- 5 of 10 target students complete the diagnostic.
+- 5 of 10 target students complete signup, starting-point selection, and confirmation.
 - 3 of 10 start the first recovery mission.
 - 2 of 10 complete the first recovery mission.
 - 0 students say the result or mission copy felt shaming.
@@ -144,4 +158,4 @@ Still not allowed in Phase 2 unless separately approved:
 
 ## Decision Rule
 
-If a proposed feature does not improve the first diagnostic, weak-link result, or 10-minute recovery routine, defer it.
+If a proposed feature does not improve signup, starting-point selection, confirmation, weak-link result, or the 10-minute recovery routine, defer it.

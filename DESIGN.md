@@ -28,9 +28,10 @@ Avoid:
 The first beta should include these screens:
 
 ```text
-Entry / Social Login
-  -> Diagnostic Start
-  -> Question Flow
+Entry
+  -> Lightweight Signup
+  -> Starting Point Selection
+  -> Confirmation Question Flow
   -> Weak-Link Result
   -> 10-Minute Recovery Routine
   -> Saved Progress / Next Session
@@ -38,34 +39,43 @@ Entry / Social Login
 
 ## Information Architecture
 
-Use story immersion lightly, but keep diagnosis as the spine.
+Use story immersion lightly, but keep the student's chosen starting point as the spine.
 
 ```text
-[Entry / Login]
+[Entry]
   1. Naroo logo + one-line promise
      "수학을 다시 시작할 위치를 5분 안에 찾기"
   2. Story frame
      "첫 장면: 어디서부터 다시 시작할지 찾는 지도"
   3. Primary action
-     "진단 시작하기"
+     "시작 위치 찾기"
   4. Trust line
      "점수 매기지 않음. 틀려도 계속 진행됨."
-  5. Social login button
-     "Google/Kakao로 계속하기"
 
-[Diagnostic Start]
-  1. Question: "언제부터 수학이 막혔나요?"
+[Lightweight Signup]
+  1. Question: "기록을 저장할 이름을 정해볼까요?"
+  2. Fields:
+     - 닉네임
+     - 지금 수학 상태
+  3. CTA: "내 기록 만들기"
+  4. Trust line:
+     "친구에게 보여줄 점수표를 만들지 않아요."
+
+[Starting Point Selection]
+  1. Question: "요즘 수학에서 어디가 제일 막히나요?"
   2. Choice chips:
-     - 고등학교 오자마자
-     - 함수부터
+     - 식을 어떻게 바꿀지 모르겠어요
+     - 함수 그래프가 나오면 막혀요
      - 문제 첫 줄부터
-     - 잘 모르겠음
-  3. CTA: "5분 진단 시작"
+     - 문자나 기호가 많으면 헷갈려요
+     - 어디서부터 다시 해야 할지 모르겠어요
+     - 더 공부하고 싶은 단원이 있어요
+  3. CTA: "가볍게 확인하기"
 
-[Question Flow]
-  1. Progress: "3 / 8"
+[Confirmation Question Flow]
+  1. Progress: "2 / 3"
   2. Concept label: "함수 그래프 읽기"
-  3. One small question
+  3. One small question based on the selected area
   4. Answer choices
   5. Secondary action: "잘 모르겠어요"
   6. Reassurance line: "모름을 골라도 괜찮아요. 위치를 찾는 중이에요."
@@ -172,8 +182,8 @@ Every interactive component needs:
 ```text
 FEATURE              | LOADING                  | EMPTY                         | ERROR                         | SUCCESS                       | PARTIAL
 ---------------------|--------------------------|-------------------------------|-------------------------------|-------------------------------|------------------------------
-Social login          | "문을 여는 중..."        | 로그인 CTA만 노출             | "로그인에 실패했어요. 다시 시도" | "기록을 불러왔어요"          | 프로필 일부 없음: 닉네임만 표시
-Diagnostic start      | "첫 장면을 준비 중..."   | 진단 기록 없음: "첫 여정 시작" | 질문셋 로드 실패: 재시도       | 시작 가능                     | 이전 시도 있음: 이어하기/새로하기
+Signup                | "기록을 만드는 중..."    | 이름 입력 CTA만 노출           | "기록을 만들지 못했어요. 다시 시도" | "기록을 만들었어요"       | 상태 선택 없음: 나중에 고르기
+Starting point        | "첫 장면을 준비 중..."   | 선택 없음: "아직 몰라도 괜찮아요" | 선택 저장 실패: 재시도       | 확인 질문 가능                | "잘 모르겠어요" 선택 가능
 Question flow         | 다음 문항 로딩           | 문항 없음: 관리자 오류 메시지  | 답변 저장 실패: 다시 저장      | 다음 장면으로 이동            | "잘 모르겠어요" 선택 가능
 Wrong answer          | 없음                     | 없음                          | 없음                          | 힌트 + 계속 진행              | 최종답 즉시 공개 금지
 Weak-link result      | "지도 그리는 중..."      | 결과 없음: 진단 다시 시작      | 결과 계산 실패: 재시도         | 약점 2-3개 + 첫 복습 CTA      | 답변 부족: 신뢰도 낮음 표시
