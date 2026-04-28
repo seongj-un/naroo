@@ -1,0 +1,183 @@
+# Naroo Beta Deployment Strategy
+
+This document defines the minimum deployment strategy for a private Naroo beta.
+
+## Goal
+
+Naroo beta needs a private web link that 5-10 target students can open from their phones.
+
+The deployment should support:
+
+- Spring Boot/Kotlin backend
+- Social login
+- PostgreSQL
+- HTTPS
+- Environment variables
+- Private beta access
+
+## Deployment Shape
+
+Use a simple single-service deployment:
+
+```text
+Student browser
+  -> HTTPS web app
+  -> Spring Boot app
+  -> PostgreSQL
+  -> OAuth provider
+```
+
+For beta, avoid Kubernetes, multi-service architecture, queues, or custom infrastructure.
+
+## Runtime Target
+
+The hosted service must support:
+
+- Java 17
+- Gradle build
+- Spring Boot application startup
+- HTTPS endpoint
+- Environment variables
+- Health check endpoint
+
+Recommended app command pattern:
+
+```text
+./gradlew bootJar
+java -jar build/libs/naroo-*.jar
+```
+
+The exact platform can be chosen later as long as it supports the runtime target above.
+
+## Database Target
+
+Use managed PostgreSQL for beta.
+
+Required settings:
+
+- One production database
+- One local/dev database
+- Connection string provided through environment variables
+- SSL enabled in hosted environment
+- Daily backups if the provider supports them
+
+Do not use in-memory storage for external beta, because next-day return and saved progress are success criteria.
+
+## Required Environment Variables
+
+```text
+SPRING_PROFILES_ACTIVE=prod
+DATABASE_URL=<postgres connection string>
+OAUTH_PROVIDER=<google|kakao>
+OAUTH_CLIENT_ID=<provider client id>
+OAUTH_CLIENT_SECRET=<provider client secret>
+APP_BASE_URL=https://<private-beta-domain>
+SESSION_SECRET=<random secret>
+```
+
+If the selected OAuth provider needs provider-specific variables, keep them prefixed:
+
+```text
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+KAKAO_CLIENT_ID=...
+KAKAO_CLIENT_SECRET=...
+```
+
+## OAuth Redirect URLs
+
+For local development:
+
+```text
+http://localhost:8080/login/oauth2/code/<provider>
+```
+
+For private beta:
+
+```text
+https://<private-beta-domain>/login/oauth2/code/<provider>
+```
+
+The OAuth app configuration must include both local and beta redirect URLs before external testing.
+
+## Profiles
+
+Use at least two Spring profiles:
+
+```text
+local
+prod
+```
+
+Local profile:
+
+- Local PostgreSQL or test container
+- Local OAuth redirect URL
+- Debug-friendly logging
+
+Prod profile:
+
+- Hosted PostgreSQL
+- HTTPS base URL
+- Secure cookies
+- No debug logs with student data
+
+## Secrets Rules
+
+- Never commit OAuth secrets.
+- Never commit database URLs.
+- Never print access tokens in logs.
+- Never log raw OAuth profile payloads.
+- Never store student real names unless the product needs them.
+
+## Beta Access
+
+For the first beta, keep access private:
+
+- Share the link manually.
+- Do not index the app publicly.
+- Do not add public marketing pages yet.
+- Keep the first page task-focused: start diagnostic or continue progress.
+
+## Health Check
+
+Add a simple health endpoint before deployment:
+
+```text
+GET /actuator/health
+```
+
+It should verify app startup. Database readiness can be added once persistence is implemented.
+
+## Release Checklist
+
+Before sharing the link:
+
+- App starts with `SPRING_PROFILES_ACTIVE=prod`.
+- Database connection works.
+- OAuth login works on the hosted URL.
+- New social login creates one student account.
+- Returning social login reuses the same account.
+- Diagnostic attempt persists.
+- Result can be reloaded after closing the browser.
+- Mobile 375px layout works.
+- Error states do not expose stack traces.
+
+## Not In Scope For Beta Deployment
+
+- Kubernetes
+- Multi-region deployment
+- CDN tuning
+- Automated blue/green deployment
+- Public landing page
+- Payment system
+- School/teacher admin portal
+
+## Open Decisions
+
+- OAuth provider: Google, Kakao, or both.
+- Hosting provider.
+- PostgreSQL provider.
+- Private beta domain or temporary provider URL.
+
+Make these decisions before inviting external testers.
