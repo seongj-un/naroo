@@ -67,7 +67,7 @@ class LoginUserServiceTest {
             userAccountRepositoryPort = FakeLoginUserRepository(null),
             passwordVerifierPort = PasswordVerifierPort { _, _ -> true },
             jwtTokenIssuerPort = JwtTokenIssuerPort { error("token should not be issued") },
-            tokenStorePort = TokenStorePort { error("token should not be stored") },
+            tokenStorePort = RejectingTokenStore(),
         )
 
         assertThrows(InvalidLoginCredentialsException::class.java) {
@@ -81,7 +81,7 @@ class LoginUserServiceTest {
             userAccountRepositoryPort = FakeLoginUserRepository(userAccount),
             passwordVerifierPort = PasswordVerifierPort { _, _ -> false },
             jwtTokenIssuerPort = JwtTokenIssuerPort { error("token should not be issued") },
-            tokenStorePort = TokenStorePort { error("token should not be stored") },
+            tokenStorePort = RejectingTokenStore(),
         )
 
         assertThrows(InvalidLoginCredentialsException::class.java) {
@@ -95,6 +95,20 @@ private class CapturingTokenStore : TokenStorePort {
 
     override fun save(token: StoredToken) {
         saved += token
+    }
+
+    override fun findUserIdByTokenId(tokenId: String): String? {
+        return saved.firstOrNull { it.tokenId == tokenId }?.userId
+    }
+}
+
+private class RejectingTokenStore : TokenStorePort {
+    override fun save(token: StoredToken) {
+        error("token should not be stored")
+    }
+
+    override fun findUserIdByTokenId(tokenId: String): String? {
+        error("token should not be read")
     }
 }
 

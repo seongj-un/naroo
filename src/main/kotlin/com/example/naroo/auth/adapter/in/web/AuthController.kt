@@ -5,8 +5,10 @@ import com.example.naroo.auth.port.`in`.LoginUserUseCase
 import com.example.naroo.auth.port.`in`.SignUpUserCommand
 import com.example.naroo.auth.port.`in`.SignUpUserUseCase
 import com.example.naroo.user.domain.MathStatus
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -64,6 +66,18 @@ class AuthController(
             ),
         )
     }
+
+    @GetMapping("/me")
+    fun me(request: HttpServletRequest): ResponseEntity<MeResponse> {
+        val authentication = request.getAttribute(JwtAuthentication.REQUEST_ATTRIBUTE) as JwtAuthentication
+        return ResponseEntity.ok(
+            MeResponse(
+                id = authentication.userId,
+                loginId = authentication.loginId,
+                nickname = authentication.nickname,
+            ),
+        )
+    }
 }
 
 data class SignUpUserRequest(
@@ -98,4 +112,10 @@ data class LoginUserResponseUser(
     val loginId: String,
     val nickname: String,
     val mathStatus: MathStatus,
+)
+
+data class MeResponse(
+    val id: String,
+    val loginId: String,
+    val nickname: String,
 )

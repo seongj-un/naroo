@@ -15,7 +15,7 @@ import java.time.ZoneOffset
 
 class HmacJwtTokenIssuerAdapterTest {
     @Test
-    fun `issues hmac signed jwt with expiration`() {
+    fun `issues and verifies hmac signed jwt`() {
         val issuer = HmacJwtTokenIssuerAdapter(
             secret = "test-jwt-secret-with-at-least-32-bytes",
             accessTokenTtlMinutes = 30,
@@ -36,5 +36,32 @@ class HmacJwtTokenIssuerAdapterTest {
         assertTrue(token.id.isNotBlank())
         assertEquals(3, token.value.split(".").size)
         assertTrue(token.value.startsWith("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."))
+
+        val verifiedToken = issuer.verify(token.value)
+        assertEquals(token.id, verifiedToken?.tokenId)
+        assertEquals("user-1", verifiedToken?.userId)
+        assertEquals("student01", verifiedToken?.loginId)
+        assertEquals("나루", verifiedToken?.nickname)
+    }
+
+    @Test
+    fun `rejects expired jwt`() {
+        val issuer = HmacJwtTokenIssuerAdapter(
+            secret = "test-jwt-secret-with-at-least-32-bytes",
+            accessTokenTtlMinutes = -1,
+            clock = Clock.fixed(Instant.parse("2026-04-29T00:00:00Z"), ZoneOffset.UTC),
+        )
+        val userAccount = UserAccount(
+            id = UserId("user-1"),
+            loginId = LoginId.from("student01"),
+            passwordHash = PasswordHash("hashed-password"),
+            nickname = Nickname.from("나루"),
+            mathStatus = MathStatus.UNKNOWN,
+            createdAt = Instant.parse("2026-04-29T00:00:00Z"),
+        )
+
+        val token = issuer.issue(userAccount)
+
+        assertEquals(null, issuer.verify(token.value))
     }
 }

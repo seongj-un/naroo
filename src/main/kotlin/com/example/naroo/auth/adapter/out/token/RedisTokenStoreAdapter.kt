@@ -25,6 +25,10 @@ class RedisTokenStoreAdapter(
         )
     }
 
+    override fun findUserIdByTokenId(tokenId: String): String? {
+        return redisTemplate.opsForValue().get(accessTokenKey(tokenId))
+    }
+
     private fun accessTokenKey(tokenId: String): String {
         return "auth:access-token:$tokenId"
     }
