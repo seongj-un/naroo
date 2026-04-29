@@ -157,6 +157,10 @@ private class CapturingDiagnosticResultRepository : DiagnosticResultRepositoryPo
         return saved.firstOrNull { it.diagnosticSessionId == diagnosticSessionId }
     }
 
+    override fun findLatestByUserId(userId: UserId): DiagnosticResult? {
+        return saved.filter { it.userId == userId }.maxByOrNull { it.createdAt }
+    }
+
     override fun save(result: DiagnosticResult): DiagnosticResult {
         saved += result
         return result

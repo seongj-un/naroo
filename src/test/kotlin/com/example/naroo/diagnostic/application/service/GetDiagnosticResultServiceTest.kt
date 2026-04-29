@@ -104,6 +104,10 @@ private class FakeDiagnosticResultRepository(
         return result?.takeIf { it.diagnosticSessionId == diagnosticSessionId }
     }
 
+    override fun findLatestByUserId(userId: UserId): DiagnosticResult? {
+        return result?.takeIf { it.userId == userId }
+    }
+
     override fun save(result: DiagnosticResult): DiagnosticResult {
         error("result should not be saved")
     }

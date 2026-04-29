@@ -110,6 +110,14 @@ private class CapturingSubmitRecoveryMissionRepository(
         return listOfNotNull(mission?.takeIf { it.userId == userId && it.diagnosticSessionId == diagnosticSessionId })
     }
 
+    override fun findLatestInProgressByUserId(userId: UserId): RecoveryMission? {
+        return mission?.takeIf { it.userId == userId && it.status == RecoveryMissionStatus.IN_PROGRESS }
+    }
+
+    override fun countByUserIdAndStatus(userId: UserId, status: RecoveryMissionStatus): Long {
+        return listOfNotNull(mission).count { it.userId == userId && it.status == status }.toLong()
+    }
+
     override fun save(mission: RecoveryMission): RecoveryMission {
         this.mission = mission
         saved += mission

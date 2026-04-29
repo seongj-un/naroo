@@ -41,6 +41,17 @@ class JpaRecoveryMissionPersistenceAdapter(
         ).map(RecoveryMissionJpaEntity::toDomain)
     }
 
+    override fun findLatestInProgressByUserId(userId: UserId): RecoveryMission? {
+        return repository.findFirstByUserIdAndStatusOrderByCreatedAtDesc(
+            userId.value,
+            RecoveryMissionStatus.IN_PROGRESS,
+        )?.toDomain()
+    }
+
+    override fun countByUserIdAndStatus(userId: UserId, status: RecoveryMissionStatus): Long {
+        return repository.countByUserIdAndStatus(userId.value, status)
+    }
+
     override fun save(mission: RecoveryMission): RecoveryMission {
         return repository.saveAndFlush(RecoveryMissionJpaEntity.from(mission)).toDomain()
     }
@@ -52,6 +63,13 @@ interface SpringDataRecoveryMissionJpaRepository : JpaRepository<RecoveryMission
         userId: String,
         diagnosticSessionId: String,
     ): List<RecoveryMissionJpaEntity>
+
+    fun findFirstByUserIdAndStatusOrderByCreatedAtDesc(
+        userId: String,
+        status: RecoveryMissionStatus,
+    ): RecoveryMissionJpaEntity?
+
+    fun countByUserIdAndStatus(userId: String, status: RecoveryMissionStatus): Long
 }
 
 @Entity

@@ -198,6 +198,10 @@ private class FakeRecoveryDiagnosticResultRepository(
         return result?.takeIf { it.diagnosticSessionId == diagnosticSessionId }
     }
 
+    override fun findLatestByUserId(userId: UserId): DiagnosticResult? {
+        return result?.takeIf { it.userId == userId }
+    }
+
     override fun save(result: DiagnosticResult): DiagnosticResult {
         error("result should not be saved")
     }
@@ -224,6 +228,14 @@ private class CapturingRecoveryMissionRepository(
         diagnosticSessionId: DiagnosticSessionId,
     ): List<RecoveryMission> {
         return listOfNotNull(mission?.takeIf { it.userId == userId && it.diagnosticSessionId == diagnosticSessionId })
+    }
+
+    override fun findLatestInProgressByUserId(userId: UserId): RecoveryMission? {
+        return mission?.takeIf { it.userId == userId && it.status == RecoveryMissionStatus.IN_PROGRESS }
+    }
+
+    override fun countByUserIdAndStatus(userId: UserId, status: RecoveryMissionStatus): Long {
+        return listOfNotNull(mission).count { it.userId == userId && it.status == status }.toLong()
     }
 
     override fun save(mission: RecoveryMission): RecoveryMission {

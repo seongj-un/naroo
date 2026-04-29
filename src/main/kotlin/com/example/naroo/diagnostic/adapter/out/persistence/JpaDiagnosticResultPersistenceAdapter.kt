@@ -23,12 +23,18 @@ class JpaDiagnosticResultPersistenceAdapter(
         return repository.findById(diagnosticSessionId.value).map(DiagnosticResultJpaEntity::toDomain).orElse(null)
     }
 
+    override fun findLatestByUserId(userId: UserId): DiagnosticResult? {
+        return repository.findFirstByUserIdOrderByCreatedAtDesc(userId.value)?.toDomain()
+    }
+
     override fun save(result: DiagnosticResult): DiagnosticResult {
         return repository.saveAndFlush(DiagnosticResultJpaEntity.from(result)).toDomain()
     }
 }
 
-interface SpringDataDiagnosticResultJpaRepository : JpaRepository<DiagnosticResultJpaEntity, String>
+interface SpringDataDiagnosticResultJpaRepository : JpaRepository<DiagnosticResultJpaEntity, String> {
+    fun findFirstByUserIdOrderByCreatedAtDesc(userId: String): DiagnosticResultJpaEntity?
+}
 
 @Entity
 @Table(name = "diagnostic_results")
