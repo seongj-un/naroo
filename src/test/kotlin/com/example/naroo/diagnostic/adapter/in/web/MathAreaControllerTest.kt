@@ -27,8 +27,8 @@ class MathAreaControllerTest {
         val response = controller.list()
 
         assertEquals(HttpStatus.OK, response.statusCode)
-        assertEquals(MathArea.FUNCTION, response.body?.single()?.code)
-        assertEquals("함수", response.body?.single()?.name)
-        assertEquals(1, response.body?.single()?.displayOrder)
+        assertEquals(MathArea.FUNCTION, response.body?.data?.single()?.code)
+        assertEquals("함수", response.body?.data?.single()?.name)
+        assertEquals(1, response.body?.data?.single()?.displayOrder)
     }
 }

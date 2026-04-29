@@ -1,5 +1,6 @@
 package com.example.naroo.auth.application.service
 
+import com.example.naroo.auth.application.AuthException
 import com.example.naroo.auth.port.`in`.SignUpUserCommand
 import com.example.naroo.auth.port.`out`.EmailSenderPort
 import com.example.naroo.auth.port.`out`.EmailVerificationMessage
@@ -77,7 +78,7 @@ class SignUpUserServiceTest {
 
         service.signUp(command)
 
-        assertThrows(DuplicateLoginIdException::class.java) {
+        assertThrows(AuthException.LoginIdAlreadyExists::class.java) {
             service.signUp(command.copy(nickname = "다른나루"))
         }
     }

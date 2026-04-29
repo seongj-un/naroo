@@ -16,9 +16,15 @@ Run the application:
 
 Default local services:
 
-- MySQL: `localhost:3307`, database `naroo`, user `naroo`, password `naroo`
+- MySQL: `localhost:3306`, database `naroo`, user `naroo`, password `naroo`
 - Redis: `localhost:6379`
 - Email verification sender: local logging adapter. Check the application log for the verification token.
+
+The application also accepts Xquare-style environment variables:
+
+- `MYSQL_URL`
+- `MYSQL_USER`
+- `MYSQL_PASS`
 
 Useful endpoints:
 

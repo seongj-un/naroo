@@ -1,5 +1,6 @@
 package com.example.naroo.diagnostic.application.service
 
+import com.example.naroo.diagnostic.application.DiagnosticException
 import com.example.naroo.diagnostic.domain.DiagnosticSession
 import com.example.naroo.diagnostic.domain.DiagnosticSessionStatus
 import com.example.naroo.diagnostic.port.`in`.CreateDiagnosticSessionCommand
@@ -23,7 +24,7 @@ class CreateDiagnosticSessionService(
     override fun create(command: CreateDiagnosticSessionCommand): CreatedDiagnosticSessionResult {
         val userId = UserId(command.userId)
         val startingPointSelection = startingPointSelectionRepositoryPort.findByUserId(userId)
-            ?: throw StartingPointSelectionRequiredException()
+            ?: throw DiagnosticException.StartingPointSelectionRequired
         val now = Instant.now(clock)
 
         val session = DiagnosticSession(
@@ -51,5 +52,3 @@ class CreateDiagnosticSessionService(
         )
     }
 }
-
-class StartingPointSelectionRequiredException : RuntimeException("starting point selection is required")

@@ -1,6 +1,8 @@
 package com.example.naroo.diagnostic.adapter.`in`.web
 
 import com.example.naroo.auth.adapter.`in`.web.JwtAuthentication
+import com.example.naroo.auth.application.AuthException
+import com.example.naroo.diagnostic.application.DiagnosticException
 import com.example.naroo.diagnostic.domain.DiagnosticSessionStatus
 import com.example.naroo.diagnostic.domain.MathArea
 import com.example.naroo.diagnostic.domain.StartingPointSelectionType
@@ -10,7 +12,9 @@ import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsCommand
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsUseCase
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointCommand
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointUseCase
-import jakarta.servlet.http.HttpServletRequest
+import com.example.naroo.infrastructure.web.dto.APiWrappedResponseDto
+import com.example.naroo.infrastructure.web.dto.SuccessResponseDto
+import com.example.naroo.infrastructure.web.dto.toWrappedDto
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -29,8 +33,8 @@ class DiagnosticController(
     private val getDiagnosticQuestionsUseCase: GetDiagnosticQuestionsUseCase,
 ) {
     @PostMapping
-    fun createDiagnosticSession(httpRequest: HttpServletRequest): ResponseEntity<CreateDiagnosticSessionResponse> {
-        val authentication = verifiedAuthentication(httpRequest)
+    fun createDiagnosticSession(): ResponseEntity<APiWrappedResponseDto<CreateDiagnosticSessionResponse>> {
+        val authentication = verifiedAuthentication()
         val result = createDiagnosticSessionUseCase.create(
             CreateDiagnosticSessionCommand(userId = authentication.userId),
         )
@@ -44,16 +48,15 @@ class DiagnosticController(
                 status = result.status,
                 createdAt = result.createdAt,
                 updatedAt = result.updatedAt,
-            ),
+            ).toWrappedDto(),
         )
     }
 
     @PostMapping("/starting-point")
     fun selectStartingPoint(
-        httpRequest: HttpServletRequest,
         @RequestBody request: SelectStartingPointRequest,
-    ): ResponseEntity<SelectStartingPointResponse> {
-        val authentication = verifiedAuthentication(httpRequest)
+    ): ResponseEntity<APiWrappedResponseDto<SelectStartingPointResponse>> {
+        val authentication = verifiedAuthentication()
 
         val result = selectStartingPointUseCase.select(
             SelectStartingPointCommand(
@@ -73,16 +76,15 @@ class DiagnosticController(
                 note = result.note,
                 createdAt = result.createdAt,
                 updatedAt = result.updatedAt,
-            ),
+            ).toWrappedDto(),
         )
     }
 
     @GetMapping("/{diagnosticSessionId}/questions")
     fun getQuestions(
-        httpRequest: HttpServletRequest,
         @PathVariable diagnosticSessionId: String,
-    ): ResponseEntity<DiagnosticQuestionsResponse> {
-        val authentication = verifiedAuthentication(httpRequest)
+    ): ResponseEntity<APiWrappedResponseDto<DiagnosticQuestionsResponse>> {
+        val authentication = verifiedAuthentication()
         val result = getDiagnosticQuestionsUseCase.get(
             GetDiagnosticQuestionsCommand(
                 userId = authentication.userId,
@@ -107,14 +109,14 @@ class DiagnosticController(
                         },
                     )
                 },
-            ),
+            ).toWrappedDto(),
         )
     }
 
-    private fun verifiedAuthentication(httpRequest: HttpServletRequest): JwtAuthentication {
-        val authentication = httpRequest.getAttribute(JwtAuthentication.REQUEST_ATTRIBUTE) as JwtAuthentication
+    private fun verifiedAuthentication(): JwtAuthentication {
+        val authentication = JwtAuthentication.current() ?: throw AuthException.Unauthorized
         if (!authentication.emailVerified) {
-            throw EmailVerificationRequiredException()
+            throw DiagnosticException.EmailVerificationRequired
         }
         return authentication
     }
@@ -128,7 +130,7 @@ data class CreateDiagnosticSessionResponse(
     val status: DiagnosticSessionStatus,
     val createdAt: Instant,
     val updatedAt: Instant,
-)
+) : SuccessResponseDto
 
 data class SelectStartingPointRequest(
     val selectionType: StartingPointSelectionType,
@@ -144,14 +146,14 @@ data class SelectStartingPointResponse(
     val note: String?,
     val createdAt: Instant,
     val updatedAt: Instant,
-)
+) : SuccessResponseDto
 
 data class DiagnosticQuestionsResponse(
     val diagnosticSessionId: String,
     val mathArea: MathArea,
     val status: DiagnosticSessionStatus,
     val questions: List<DiagnosticQuestionResponse>,
-)
+) : SuccessResponseDto
 
 data class DiagnosticQuestionResponse(
     val id: String,
@@ -163,5 +165,3 @@ data class DiagnosticQuestionChoiceResponse(
     val id: String,
     val text: String,
 )
-
-class EmailVerificationRequiredException : RuntimeException("email verification is required")

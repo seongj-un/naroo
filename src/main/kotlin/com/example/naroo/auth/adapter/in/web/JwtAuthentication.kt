@@ -8,6 +8,11 @@ data class JwtAuthentication(
     val nickname: String,
 ) {
     companion object {
-        const val REQUEST_ATTRIBUTE = "naroo.jwtAuthentication"
+        fun current(): JwtAuthentication? {
+            val authentication = org.springframework.security.core.context.SecurityContextHolder
+                .getContext()
+                .authentication
+            return authentication?.principal as? JwtAuthentication
+        }
     }
 }

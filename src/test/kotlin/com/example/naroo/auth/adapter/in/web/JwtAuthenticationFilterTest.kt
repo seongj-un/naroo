@@ -10,11 +10,11 @@ import jakarta.servlet.FilterChain
 import jakarta.servlet.ServletRequest
 import jakarta.servlet.ServletResponse
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.mock.web.MockHttpServletResponse
+import org.springframework.security.core.context.SecurityContextHolder
 
 class JwtAuthenticationFilterTest {
     @Test
@@ -40,11 +40,11 @@ class JwtAuthenticationFilterTest {
 
         assertEquals(200, response.status)
         assertEquals(1, chain.calledCount)
-        assertNotNull(request.getAttribute(JwtAuthentication.REQUEST_ATTRIBUTE))
+        assertEquals("user-1", chain.authentication?.userId)
     }
 
     @Test
-    fun `rejects protected request without bearer token`() {
+    fun `continues protected request without bearer token and leaves authentication empty`() {
         val filter = JwtAuthenticationFilter(
             jwtTokenVerifierPort = JwtTokenVerifierPort { error("token should not be verified") },
             tokenStorePort = FakeTokenStore(),
@@ -55,13 +55,13 @@ class JwtAuthenticationFilterTest {
 
         filter.doFilter(request, response, chain)
 
-        assertEquals(401, response.status)
-        assertEquals(0, chain.calledCount)
-        assertNull(request.getAttribute(JwtAuthentication.REQUEST_ATTRIBUTE))
+        assertEquals(200, response.status)
+        assertEquals(1, chain.calledCount)
+        assertNull(chain.authentication)
     }
 
     @Test
-    fun `protects diagnostic endpoints`() {
+    fun `continues diagnostic endpoints without authentication`() {
         val filter = JwtAuthenticationFilter(
             jwtTokenVerifierPort = JwtTokenVerifierPort { error("token should not be verified") },
             tokenStorePort = FakeTokenStore(),
@@ -72,8 +72,9 @@ class JwtAuthenticationFilterTest {
 
         filter.doFilter(request, response, chain)
 
-        assertEquals(401, response.status)
-        assertEquals(0, chain.calledCount)
+        assertEquals(200, response.status)
+        assertEquals(1, chain.calledCount)
+        assertNull(chain.authentication)
     }
 }
 
@@ -107,8 +108,10 @@ private class FakeTokenStore(
 
 private class CapturingFilterChain : FilterChain {
     var calledCount = 0
+    var authentication: JwtAuthentication? = null
 
     override fun doFilter(request: ServletRequest, response: ServletResponse) {
         calledCount += 1
+        authentication = SecurityContextHolder.getContext().authentication?.principal as? JwtAuthentication
     }
 }

@@ -1,5 +1,6 @@
 package com.example.naroo.auth.application.service
 
+import com.example.naroo.auth.application.AuthException
 import com.example.naroo.auth.port.`in`.LoginUserCommand
 import com.example.naroo.auth.port.`out`.IssuedJwtToken
 import com.example.naroo.auth.port.`out`.JwtTokenIssuerPort
@@ -83,7 +84,7 @@ class LoginUserServiceTest {
             tokenStorePort = RejectingTokenStore(),
         )
 
-        assertThrows(InvalidLoginCredentialsException::class.java) {
+        assertThrows(AuthException.InvalidCredentials::class.java) {
             service.login(LoginUserCommand(loginId = "student01", password = "password123"))
         }
     }
@@ -98,7 +99,7 @@ class LoginUserServiceTest {
             tokenStorePort = RejectingTokenStore(),
         )
 
-        assertThrows(InvalidLoginCredentialsException::class.java) {
+        assertThrows(AuthException.InvalidCredentials::class.java) {
             service.login(LoginUserCommand(loginId = "student01", password = "wrong-password"))
         }
     }

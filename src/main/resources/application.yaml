@@ -2,9 +2,10 @@ spring:
   application:
     name: naroo
   datasource:
-    url: ${NAROO_DATABASE_URL:jdbc:mysql://127.0.0.1:3307/naroo?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false}
-    username: ${NAROO_DATABASE_USERNAME:naroo}
-    password: ${NAROO_DATABASE_PASSWORD:naroo}
+    url: ${MYSQL_URL:${NAROO_DATABASE_URL:jdbc:mysql://localhost:3306/naroo?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false}}
+    username: ${MYSQL_USER:${NAROO_DATABASE_USERNAME:naroo}}
+    password: ${MYSQL_PASS:${NAROO_DATABASE_PASSWORD:naroo}}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
       host: ${NAROO_REDIS_HOST:localhost}

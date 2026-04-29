@@ -1,5 +1,6 @@
 package com.example.naroo.diagnostic.application.service
 
+import com.example.naroo.diagnostic.application.DiagnosticException
 import com.example.naroo.diagnostic.domain.DiagnosticQuestionCatalog
 import com.example.naroo.diagnostic.domain.DiagnosticSession
 import com.example.naroo.diagnostic.domain.DiagnosticSessionId
@@ -24,7 +25,7 @@ class GetDiagnosticQuestionsService(
         val userId = UserId(command.userId)
         val session = diagnosticSessionRepositoryPort.findById(DiagnosticSessionId(command.diagnosticSessionId))
             ?.takeIf { it.userId == userId }
-            ?: throw DiagnosticSessionNotFoundException()
+            ?: throw DiagnosticException.DiagnosticSessionNotFound
 
         val activeSession = if (session.status == DiagnosticSessionStatus.READY) {
             diagnosticSessionRepositoryPort.save(
@@ -39,7 +40,7 @@ class GetDiagnosticQuestionsService(
 
         val questions = DiagnosticQuestionCatalog.findByMathArea(activeSession.mathArea)
         if (questions.isEmpty()) {
-            throw DiagnosticQuestionsNotFoundException()
+            throw DiagnosticException.DiagnosticQuestionsNotFound
         }
 
         return DiagnosticQuestionsResult(
@@ -61,6 +62,3 @@ class GetDiagnosticQuestionsService(
         )
     }
 }
-
-class DiagnosticSessionNotFoundException : RuntimeException("diagnostic session not found")
-class DiagnosticQuestionsNotFoundException : RuntimeException("diagnostic questions not found")

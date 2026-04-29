@@ -1,5 +1,6 @@
 package com.example.naroo.auth.adapter.`in`.web
 
+import com.example.naroo.auth.application.AuthException
 import com.example.naroo.auth.port.`in`.LoginUserCommand
 import com.example.naroo.auth.port.`in`.LoginUserUseCase
 import com.example.naroo.auth.port.`in`.ReissueTokenCommand
@@ -8,8 +9,10 @@ import com.example.naroo.auth.port.`in`.SignUpUserCommand
 import com.example.naroo.auth.port.`in`.SignUpUserUseCase
 import com.example.naroo.auth.port.`in`.VerifyEmailCommand
 import com.example.naroo.auth.port.`in`.VerifyEmailUseCase
+import com.example.naroo.infrastructure.web.dto.APiWrappedResponseDto
+import com.example.naroo.infrastructure.web.dto.SuccessResponseDto
+import com.example.naroo.infrastructure.web.dto.toWrappedDto
 import com.example.naroo.user.domain.MathStatus
-import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
@@ -30,7 +33,7 @@ class AuthController(
     private val verifyEmailUseCase: VerifyEmailUseCase,
 ) {
     @PostMapping("/sign-up")
-    fun signUp(@RequestBody request: SignUpUserRequest): ResponseEntity<SignUpUserResponse> {
+    fun signUp(@RequestBody request: SignUpUserRequest): ResponseEntity<APiWrappedResponseDto<SignUpUserResponse>> {
         val result = signUpUserUseCase.signUp(
             SignUpUserCommand(
                 loginId = request.loginId,
@@ -50,12 +53,12 @@ class AuthController(
                 nickname = result.nickname,
                 mathStatus = result.mathStatus,
                 createdAt = result.createdAt,
-            ),
+            ).toWrappedDto(),
         )
     }
 
     @PostMapping("/login")
-    fun login(@RequestBody request: LoginUserRequest): ResponseEntity<LoginUserResponse> {
+    fun login(@RequestBody request: LoginUserRequest): ResponseEntity<APiWrappedResponseDto<LoginUserResponse>> {
         val result = loginUserUseCase.login(
             LoginUserCommand(
                 loginId = request.loginId,
@@ -78,16 +81,16 @@ class AuthController(
                         nickname = result.user.nickname,
                         mathStatus = result.user.mathStatus,
                     ),
-                ),
+                ).toWrappedDto(),
             )
     }
 
     @PostMapping("/reissue")
     fun reissue(
         @CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) refreshToken: String?,
-    ): ResponseEntity<ReissueTokenResponse> {
+    ): ResponseEntity<APiWrappedResponseDto<ReissueTokenResponse>> {
         if (refreshToken.isNullOrBlank()) {
-            throw InvalidRefreshTokenRequestException()
+            throw AuthException.RefreshTokenRequired
         }
 
         val result = reissueTokenUseCase.reissue(ReissueTokenCommand(refreshToken = refreshToken))
@@ -98,32 +101,32 @@ class AuthController(
                     accessToken = result.accessToken,
                     tokenType = result.tokenType,
                     expiresAt = result.expiresAt,
-                ),
+                ).toWrappedDto(),
             )
     }
 
     @PostMapping("/email/verify")
-    fun verifyEmail(@RequestBody request: VerifyEmailRequest): ResponseEntity<VerifyEmailResponse> {
+    fun verifyEmail(@RequestBody request: VerifyEmailRequest): ResponseEntity<APiWrappedResponseDto<VerifyEmailResponse>> {
         val result = verifyEmailUseCase.verify(VerifyEmailCommand(token = request.token))
         return ResponseEntity.ok(
             VerifyEmailResponse(
                 userId = result.userId,
                 email = result.email,
                 emailVerified = result.emailVerified,
-            ),
+            ).toWrappedDto(),
         )
     }
 
     @GetMapping("/me")
-    fun me(request: HttpServletRequest): ResponseEntity<MeResponse> {
-        val authentication = request.getAttribute(JwtAuthentication.REQUEST_ATTRIBUTE) as JwtAuthentication
-        return ResponseEntity.ok(
+    fun me(): APiWrappedResponseDto<MeResponse> {
+        val authentication = JwtAuthentication.current() ?: throw AuthException.Unauthorized
+        return (
             MeResponse(
                 id = authentication.userId,
                 loginId = authentication.loginId,
                 emailVerified = authentication.emailVerified,
                 nickname = authentication.nickname,
-            ),
+            ).toWrappedDto()
         )
     }
 
@@ -158,7 +161,7 @@ data class SignUpUserResponse(
     val nickname: String,
     val mathStatus: MathStatus,
     val createdAt: Instant,
-)
+) : SuccessResponseDto
 
 data class LoginUserRequest(
     val loginId: String,
@@ -170,13 +173,13 @@ data class LoginUserResponse(
     val tokenType: String,
     val expiresAt: Instant,
     val user: LoginUserResponseUser,
-)
+) : SuccessResponseDto
 
 data class ReissueTokenResponse(
     val accessToken: String,
     val tokenType: String,
     val expiresAt: Instant,
-)
+) : SuccessResponseDto
 
 data class VerifyEmailRequest(
     val token: String,
@@ -186,7 +189,7 @@ data class VerifyEmailResponse(
     val userId: String,
     val email: String,
     val emailVerified: Boolean,
-)
+) : SuccessResponseDto
 
 data class LoginUserResponseUser(
     val id: String,
@@ -202,6 +205,4 @@ data class MeResponse(
     val loginId: String,
     val emailVerified: Boolean,
     val nickname: String,
-)
-
-class InvalidRefreshTokenRequestException : RuntimeException("refresh token is required")
+) : SuccessResponseDto

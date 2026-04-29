@@ -1,0 +1,12 @@
+package com.example.naroo.diagnostic.adapter.`in`.web.errorCode
+
+import com.example.naroo.infrastructure.web.ErrorCode
+
+enum class DiagnosticErrorCode(
+    override val value: String,
+) : ErrorCode {
+    EMAIL_VERIFICATION_REQUIRED("DIAGNOSTIC_EMAIL_VERIFICATION_REQUIRED"),
+    STARTING_POINT_SELECTION_REQUIRED("DIAGNOSTIC_STARTING_POINT_SELECTION_REQUIRED"),
+    DIAGNOSTIC_SESSION_NOT_FOUND("DIAGNOSTIC_SESSION_NOT_FOUND"),
+    DIAGNOSTIC_QUESTIONS_NOT_FOUND("DIAGNOSTIC_QUESTIONS_NOT_FOUND"),
+}

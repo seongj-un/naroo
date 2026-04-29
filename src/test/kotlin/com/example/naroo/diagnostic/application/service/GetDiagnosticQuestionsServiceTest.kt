@@ -1,5 +1,6 @@
 package com.example.naroo.diagnostic.application.service
 
+import com.example.naroo.diagnostic.application.DiagnosticException
 import com.example.naroo.diagnostic.domain.DiagnosticSession
 import com.example.naroo.diagnostic.domain.DiagnosticSessionId
 import com.example.naroo.diagnostic.domain.DiagnosticSessionStatus
@@ -69,7 +70,7 @@ class GetDiagnosticQuestionsServiceTest {
             clock = Clock.fixed(Instant.parse("2026-04-29T01:00:00Z"), ZoneOffset.UTC),
         )
 
-        assertThrows(DiagnosticSessionNotFoundException::class.java) {
+        assertThrows(DiagnosticException.DiagnosticSessionNotFound::class.java) {
             service.get(
                 GetDiagnosticQuestionsCommand(
                     userId = "other-user",
@@ -77,7 +78,7 @@ class GetDiagnosticQuestionsServiceTest {
                 ),
             )
         }
-        assertThrows(DiagnosticSessionNotFoundException::class.java) {
+        assertThrows(DiagnosticException.DiagnosticSessionNotFound::class.java) {
             service.get(
                 GetDiagnosticQuestionsCommand(
                     userId = "user-1",

@@ -1,5 +1,6 @@
 package com.example.naroo.auth.application.service
 
+import com.example.naroo.auth.application.AuthException
 import com.example.naroo.auth.port.`in`.SignUpUserCommand
 import com.example.naroo.auth.port.`in`.SignUpUserUseCase
 import com.example.naroo.auth.port.`in`.SignedUpUserResult
@@ -37,10 +38,10 @@ class SignUpUserService(
         require(command.password.length >= 8) { "password must be at least 8 characters" }
 
         if (userAccountRepositoryPort.existsByLoginId(loginId)) {
-            throw DuplicateLoginIdException(loginId.value)
+            throw AuthException.LoginIdAlreadyExists
         }
         if (userAccountRepositoryPort.existsByEmail(email)) {
-            throw DuplicateEmailException(email.value)
+            throw AuthException.EmailAlreadyExists
         }
 
         val userAccount = UserAccount(
@@ -58,9 +59,9 @@ class SignUpUserService(
             userAccountRepositoryPort.save(userAccount)
         } catch (_: DuplicateUserAccountException) {
             if (userAccountRepositoryPort.existsByEmail(email)) {
-                throw DuplicateEmailException(email.value)
+                throw AuthException.EmailAlreadyExists
             }
-            throw DuplicateLoginIdException(loginId.value)
+            throw AuthException.LoginIdAlreadyExists
         }
 
         val verificationToken = emailVerificationTokenPort.issue(saved.id.value, saved.email.value)
@@ -92,6 +93,3 @@ class SignUpUserService(
         )
     }
 }
-
-class DuplicateLoginIdException(loginId: String) : RuntimeException("loginId already exists: $loginId")
-class DuplicateEmailException(email: String) : RuntimeException("email already exists: $email")

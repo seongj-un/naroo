@@ -1,5 +1,6 @@
 package com.example.naroo.auth.application.service
 
+import com.example.naroo.auth.application.AuthException
 import com.example.naroo.auth.port.`in`.ReissueTokenCommand
 import com.example.naroo.auth.port.`in`.ReissueTokenUseCase
 import com.example.naroo.auth.port.`in`.ReissuedTokenResult
@@ -22,18 +23,18 @@ class ReissueTokenService(
     override fun reissue(command: ReissueTokenCommand): ReissuedTokenResult {
         val refreshTokenId = command.refreshToken.substringBefore('.', missingDelimiterValue = "")
         if (refreshTokenId.isBlank()) {
-            throw InvalidRefreshTokenException()
+            throw AuthException.InvalidRefreshToken
         }
 
         val storedRefreshToken = tokenStorePort.consumeRefreshToken(refreshTokenId)
-            ?: throw InvalidRefreshTokenException()
+            ?: throw AuthException.InvalidRefreshToken
 
         if (storedRefreshToken.tokenHash != refreshTokenPort.hash(command.refreshToken)) {
-            throw InvalidRefreshTokenException()
+            throw AuthException.InvalidRefreshToken
         }
 
         val userAccount = userAccountRepositoryPort.findById(UserId(storedRefreshToken.userId))
-            ?: throw InvalidRefreshTokenException()
+            ?: throw AuthException.InvalidRefreshToken
 
         val accessToken = jwtTokenIssuerPort.issue(userAccount)
         val refreshToken = refreshTokenPort.issue(userAccount.id.value)
@@ -62,5 +63,3 @@ class ReissueTokenService(
         )
     }
 }
-
-class InvalidRefreshTokenException : RuntimeException("invalid refresh token")

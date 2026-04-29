@@ -1,5 +1,6 @@
 package com.example.naroo.diagnostic.application.service
 
+import com.example.naroo.diagnostic.application.DiagnosticException
 import com.example.naroo.diagnostic.domain.DiagnosticSession
 import com.example.naroo.diagnostic.domain.DiagnosticSessionId
 import com.example.naroo.diagnostic.domain.DiagnosticSessionStatus
@@ -55,7 +56,7 @@ class CreateDiagnosticSessionServiceTest {
             clock = Clock.fixed(Instant.parse("2026-04-29T00:00:00Z"), ZoneOffset.UTC),
         )
 
-        assertThrows(StartingPointSelectionRequiredException::class.java) {
+        assertThrows(DiagnosticException.StartingPointSelectionRequired::class.java) {
             service.create(CreateDiagnosticSessionCommand(userId = "user-1"))
         }
     }

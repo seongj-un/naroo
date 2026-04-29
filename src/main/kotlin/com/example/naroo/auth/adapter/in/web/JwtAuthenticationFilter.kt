@@ -7,7 +7,8 @@ import jakarta.servlet.FilterChain
 import jakarta.servlet.ServletRequest
 import jakarta.servlet.ServletResponse
 import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 
 @Component
@@ -17,47 +18,29 @@ class JwtAuthenticationFilter(
 ) : Filter {
     override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
         val httpRequest = request as HttpServletRequest
-        val httpResponse = response as HttpServletResponse
-
-        if (!requiresAuthentication(httpRequest)) {
+        try {
+            val rawToken = bearerToken(httpRequest)
+            if (rawToken != null) {
+                val verifiedToken = jwtTokenVerifierPort.verify(rawToken)
+                if (verifiedToken != null) {
+                    val storedUserId = tokenStorePort.findUserIdByAccessTokenId(verifiedToken.tokenId)
+                    if (storedUserId == verifiedToken.userId) {
+                        val authentication = JwtAuthentication(
+                            tokenId = verifiedToken.tokenId,
+                            userId = verifiedToken.userId,
+                            loginId = verifiedToken.loginId,
+                            emailVerified = verifiedToken.emailVerified,
+                            nickname = verifiedToken.nickname,
+                        )
+                        SecurityContextHolder.getContext().authentication =
+                            UsernamePasswordAuthenticationToken(authentication, null, emptyList())
+                    }
+                }
+            }
+        } finally {
             chain.doFilter(request, response)
-            return
+            SecurityContextHolder.clearContext()
         }
-
-        val rawToken = bearerToken(httpRequest)
-        if (rawToken == null) {
-            reject(httpResponse)
-            return
-        }
-
-        val verifiedToken = jwtTokenVerifierPort.verify(rawToken)
-        if (verifiedToken == null) {
-            reject(httpResponse)
-            return
-        }
-
-        val storedUserId = tokenStorePort.findUserIdByAccessTokenId(verifiedToken.tokenId)
-        if (storedUserId != verifiedToken.userId) {
-            reject(httpResponse)
-            return
-        }
-
-        httpRequest.setAttribute(
-            JwtAuthentication.REQUEST_ATTRIBUTE,
-            JwtAuthentication(
-                tokenId = verifiedToken.tokenId,
-                userId = verifiedToken.userId,
-                loginId = verifiedToken.loginId,
-                emailVerified = verifiedToken.emailVerified,
-                nickname = verifiedToken.nickname,
-            ),
-        )
-        chain.doFilter(request, response)
-    }
-
-    private fun requiresAuthentication(request: HttpServletRequest): Boolean {
-        return request.requestURI.startsWith("/api/auth/me") ||
-            request.requestURI.startsWith("/api/diagnostics")
     }
 
     private fun bearerToken(request: HttpServletRequest): String? {
@@ -66,11 +49,5 @@ class JwtAuthenticationFilter(
             return null
         }
         return authorization.removePrefix("Bearer ").trim().takeIf { it.isNotBlank() }
-    }
-
-    private fun reject(response: HttpServletResponse) {
-        response.status = HttpServletResponse.SC_UNAUTHORIZED
-        response.contentType = "application/json"
-        response.writer.write("""{"message":"unauthorized"}""")
     }
 }

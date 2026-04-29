@@ -56,10 +56,10 @@ class AuthControllerTest {
         assertEquals("student01", capturedCommand?.loginId)
         assertEquals("student01@example.com", capturedCommand?.email)
         assertEquals("password123", capturedCommand?.password)
-        assertEquals("student01@example.com", response.body?.email)
-        assertEquals(false, response.body?.emailVerified)
-        assertEquals("나루", response.body?.nickname)
-        assertEquals(MathStatus.MOSTLY_GAVE_UP, response.body?.mathStatus)
+        assertEquals("student01@example.com", response.body?.data?.email)
+        assertEquals(false, response.body?.data?.emailVerified)
+        assertEquals("나루", response.body?.data?.nickname)
+        assertEquals(MathStatus.MOSTLY_GAVE_UP, response.body?.data?.mathStatus)
     }
 
     @Test
@@ -99,11 +99,11 @@ class AuthControllerTest {
         assertEquals(HttpStatus.OK, response.statusCode)
         assertEquals("student01", capturedCommand?.loginId)
         assertEquals("password123", capturedCommand?.password)
-        assertEquals("jwt-token", response.body?.accessToken)
-        assertEquals("Bearer", response.body?.tokenType)
-        assertEquals("user-1", response.body?.user?.id)
-        assertEquals("student01@example.com", response.body?.user?.email)
-        assertEquals(false, response.body?.user?.emailVerified)
+        assertEquals("jwt-token", response.body?.data?.accessToken)
+        assertEquals("Bearer", response.body?.data?.tokenType)
+        assertEquals("user-1", response.body?.data?.user?.id)
+        assertEquals("student01@example.com", response.body?.data?.user?.email)
+        assertEquals(false, response.body?.data?.user?.emailVerified)
         assertEquals(true, response.headers["Set-Cookie"]?.single()?.contains("refresh_token=refresh-token"))
     }
 
@@ -130,8 +130,8 @@ class AuthControllerTest {
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertEquals("refresh-token", capturedCommand?.refreshToken)
-        assertEquals("new-jwt-token", response.body?.accessToken)
-        assertEquals("Bearer", response.body?.tokenType)
+        assertEquals("new-jwt-token", response.body?.data?.accessToken)
+        assertEquals("Bearer", response.body?.data?.tokenType)
         assertEquals(true, response.headers["Set-Cookie"]?.single()?.contains("refresh_token=new-refresh-token"))
     }
 
@@ -156,8 +156,8 @@ class AuthControllerTest {
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertEquals("email-token", capturedCommand?.token)
-        assertEquals("user-1", response.body?.userId)
-        assertEquals("student01@example.com", response.body?.email)
-        assertEquals(true, response.body?.emailVerified)
+        assertEquals("user-1", response.body?.data?.userId)
+        assertEquals("student01@example.com", response.body?.data?.email)
+        assertEquals(true, response.body?.data?.emailVerified)
     }
 }

@@ -1,6 +1,7 @@
 package com.example.naroo.diagnostic.adapter.`in`.web
 
 import com.example.naroo.auth.adapter.`in`.web.JwtAuthentication
+import com.example.naroo.diagnostic.application.DiagnosticException
 import com.example.naroo.diagnostic.domain.DiagnosticSessionStatus
 import com.example.naroo.diagnostic.domain.MathArea
 import com.example.naroo.diagnostic.domain.StartingPointSelectionType
@@ -17,12 +18,19 @@ import com.example.naroo.diagnostic.port.`in`.SelectStartingPointUseCase
 import com.example.naroo.diagnostic.port.`in`.SelectedStartingPointResult
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpStatus
-import org.springframework.mock.web.MockHttpServletRequest
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
 import java.time.Instant
 
 class DiagnosticControllerTest {
+    @AfterEach
+    fun clearSecurityContext() {
+        SecurityContextHolder.clearContext()
+    }
+
     @Test
     fun `get questions returns diagnostic questions for verified user`() {
         var capturedCommand: GetDiagnosticQuestionsCommand? = null
@@ -50,18 +58,16 @@ class DiagnosticControllerTest {
             },
         )
 
-        val response = controller.getQuestions(
-            httpRequest = authenticatedRequest(emailVerified = true),
-            diagnosticSessionId = "diagnostic-session-1",
-        )
+        authenticate(emailVerified = true)
+        val response = controller.getQuestions(diagnosticSessionId = "diagnostic-session-1")
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertEquals("user-1", capturedCommand?.userId)
         assertEquals("diagnostic-session-1", capturedCommand?.diagnosticSessionId)
-        assertEquals(MathArea.FUNCTION, response.body?.mathArea)
-        assertEquals(DiagnosticSessionStatus.IN_PROGRESS, response.body?.status)
-        assertEquals("function-substitution-1", response.body?.questions?.single()?.id)
-        assertEquals("unknown", response.body?.questions?.single()?.choices?.last()?.id)
+        assertEquals(MathArea.FUNCTION, response.body?.data?.mathArea)
+        assertEquals(DiagnosticSessionStatus.IN_PROGRESS, response.body?.data?.status)
+        assertEquals("function-substitution-1", response.body?.data?.questions?.single()?.id)
+        assertEquals("unknown", response.body?.data?.questions?.single()?.choices?.last()?.id)
     }
 
     @Test
@@ -72,11 +78,9 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
         )
 
-        assertThrows(EmailVerificationRequiredException::class.java) {
-            controller.getQuestions(
-                httpRequest = authenticatedRequest(emailVerified = false),
-                diagnosticSessionId = "diagnostic-session-1",
-            )
+        authenticate(emailVerified = false)
+        assertThrows(DiagnosticException.EmailVerificationRequired::class.java) {
+            controller.getQuestions(diagnosticSessionId = "diagnostic-session-1")
         }
     }
 
@@ -100,14 +104,15 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
         )
 
-        val response = controller.createDiagnosticSession(authenticatedRequest(emailVerified = true))
+        authenticate(emailVerified = true)
+        val response = controller.createDiagnosticSession()
 
         assertEquals(HttpStatus.CREATED, response.statusCode)
         assertEquals("user-1", capturedCommand?.userId)
-        assertEquals("diagnostic-session-1", response.body?.id)
-        assertEquals("starting-point-1", response.body?.startingPointSelectionId)
-        assertEquals(MathArea.FUNCTION, response.body?.mathArea)
-        assertEquals(DiagnosticSessionStatus.READY, response.body?.status)
+        assertEquals("diagnostic-session-1", response.body?.data?.id)
+        assertEquals("starting-point-1", response.body?.data?.startingPointSelectionId)
+        assertEquals(MathArea.FUNCTION, response.body?.data?.mathArea)
+        assertEquals(DiagnosticSessionStatus.READY, response.body?.data?.status)
     }
 
     @Test
@@ -118,8 +123,9 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
         )
 
-        assertThrows(EmailVerificationRequiredException::class.java) {
-            controller.createDiagnosticSession(authenticatedRequest(emailVerified = false))
+        authenticate(emailVerified = false)
+        assertThrows(DiagnosticException.EmailVerificationRequired::class.java) {
+            controller.createDiagnosticSession()
         }
     }
 
@@ -142,10 +148,9 @@ class DiagnosticControllerTest {
             CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
         )
-        val httpRequest = authenticatedRequest(emailVerified = true)
+        authenticate(emailVerified = true)
 
         val response = controller.selectStartingPoint(
-            httpRequest = httpRequest,
             request = SelectStartingPointRequest(
                 selectionType = StartingPointSelectionType.STUDY_INTEREST,
                 mathArea = MathArea.SEQUENCE,
@@ -157,7 +162,7 @@ class DiagnosticControllerTest {
         assertEquals("user-1", capturedCommand?.userId)
         assertEquals(StartingPointSelectionType.STUDY_INTEREST, capturedCommand?.selectionType)
         assertEquals(MathArea.SEQUENCE, capturedCommand?.mathArea)
-        assertEquals("수열을 다시 해보고 싶어요", response.body?.note)
+        assertEquals("수열을 다시 해보고 싶어요", response.body?.data?.note)
     }
 
     @Test
@@ -168,9 +173,9 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
         )
 
-        assertThrows(EmailVerificationRequiredException::class.java) {
+        authenticate(emailVerified = false)
+        assertThrows(DiagnosticException.EmailVerificationRequired::class.java) {
             controller.selectStartingPoint(
-                httpRequest = authenticatedRequest(emailVerified = false),
                 request = SelectStartingPointRequest(
                     selectionType = StartingPointSelectionType.WEAK_AREA,
                     mathArea = MathArea.FUNCTION,
@@ -180,18 +185,15 @@ class DiagnosticControllerTest {
         }
     }
 
-    private fun authenticatedRequest(emailVerified: Boolean): MockHttpServletRequest {
-        return MockHttpServletRequest("POST", "/api/diagnostics/starting-point").apply {
-            setAttribute(
-                JwtAuthentication.REQUEST_ATTRIBUTE,
-                JwtAuthentication(
-                    tokenId = "token-1",
-                    userId = "user-1",
-                    loginId = "student01",
-                    emailVerified = emailVerified,
-                    nickname = "나루",
-                ),
-            )
-        }
+    private fun authenticate(emailVerified: Boolean) {
+        val authentication = JwtAuthentication(
+            tokenId = "token-1",
+            userId = "user-1",
+            loginId = "student01",
+            emailVerified = emailVerified,
+            nickname = "나루",
+        )
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(authentication, null, emptyList())
     }
 }

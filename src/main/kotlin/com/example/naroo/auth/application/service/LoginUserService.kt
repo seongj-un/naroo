@@ -1,6 +1,6 @@
 package com.example.naroo.auth.application.service
 
-import com.example.naroo.user.domain.LoginId
+import com.example.naroo.auth.application.AuthException
 import com.example.naroo.auth.port.`in`.LoggedInUser
 import com.example.naroo.auth.port.`in`.LoggedInUserResult
 import com.example.naroo.auth.port.`in`.LoginUserCommand
@@ -11,6 +11,7 @@ import com.example.naroo.auth.port.`out`.RefreshTokenPort
 import com.example.naroo.auth.port.`out`.StoredAccessToken
 import com.example.naroo.auth.port.`out`.StoredRefreshToken
 import com.example.naroo.auth.port.`out`.TokenStorePort
+import com.example.naroo.user.domain.LoginId
 import com.example.naroo.user.port.`out`.UserAccountRepositoryPort
 import org.springframework.stereotype.Service
 
@@ -25,10 +26,10 @@ class LoginUserService(
     override fun login(command: LoginUserCommand): LoggedInUserResult {
         val loginId = LoginId.from(command.loginId)
         val userAccount = userAccountRepositoryPort.findByLoginId(loginId)
-            ?: throw InvalidLoginCredentialsException()
+            ?: throw AuthException.InvalidCredentials
 
         if (!passwordVerifierPort.matches(command.password, userAccount.passwordHash)) {
-            throw InvalidLoginCredentialsException()
+            throw AuthException.InvalidCredentials
         }
 
         val token = jwtTokenIssuerPort.issue(userAccount)
@@ -65,5 +66,3 @@ class LoginUserService(
         )
     }
 }
-
-class InvalidLoginCredentialsException : RuntimeException("invalid login credentials")

@@ -1,5 +1,6 @@
 package com.example.naroo.auth.application.service
 
+import com.example.naroo.auth.application.AuthException
 import com.example.naroo.auth.port.`in`.VerifyEmailCommand
 import com.example.naroo.auth.port.`out`.EmailVerificationTokenPort
 import com.example.naroo.auth.port.`out`.IssuedEmailVerificationToken
@@ -56,7 +57,7 @@ class VerifyEmailServiceTest {
         assertEquals("student01@example.com", result.email)
         assertEquals(true, result.emailVerified)
         assertEquals(true, repository.saved.single().emailVerified)
-        assertThrows(InvalidEmailVerificationTokenException::class.java) {
+        assertThrows(AuthException.InvalidEmailVerificationToken::class.java) {
             service.verify(VerifyEmailCommand(token = "email-token-1.secret"))
         }
     }
@@ -78,10 +79,10 @@ class VerifyEmailServiceTest {
             tokenStorePort = tokenStore,
         )
 
-        assertThrows(InvalidEmailVerificationTokenException::class.java) {
+        assertThrows(AuthException.InvalidEmailVerificationToken::class.java) {
             service.verify(VerifyEmailCommand(token = "email-token-1.secret"))
         }
-        assertThrows(InvalidEmailVerificationTokenException::class.java) {
+        assertThrows(AuthException.InvalidEmailVerificationToken::class.java) {
             service.verify(VerifyEmailCommand(token = "email-token-1.secret"))
         }
     }

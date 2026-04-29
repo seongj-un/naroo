@@ -1,5 +1,6 @@
 package com.example.naroo.auth.application.service
 
+import com.example.naroo.auth.application.AuthException
 import com.example.naroo.auth.port.`in`.VerifiedEmailResult
 import com.example.naroo.auth.port.`in`.VerifyEmailCommand
 import com.example.naroo.auth.port.`in`.VerifyEmailUseCase
@@ -19,21 +20,21 @@ class VerifyEmailService(
     override fun verify(command: VerifyEmailCommand): VerifiedEmailResult {
         val tokenId = command.token.substringBefore('.', missingDelimiterValue = "")
         if (tokenId.isBlank()) {
-            throw InvalidEmailVerificationTokenException()
+            throw AuthException.InvalidEmailVerificationToken
         }
 
         val storedToken = tokenStorePort.consumeEmailVerificationToken(tokenId)
-            ?: throw InvalidEmailVerificationTokenException()
+            ?: throw AuthException.InvalidEmailVerificationToken
 
         if (storedToken.tokenHash != emailVerificationTokenPort.hash(command.token)) {
-            throw InvalidEmailVerificationTokenException()
+            throw AuthException.InvalidEmailVerificationToken
         }
 
         val userAccount = userAccountRepositoryPort.findById(UserId(storedToken.userId))
-            ?: throw InvalidEmailVerificationTokenException()
+            ?: throw AuthException.InvalidEmailVerificationToken
         val email = EmailAddress.from(storedToken.email)
         if (userAccount.email != email) {
-            throw InvalidEmailVerificationTokenException()
+            throw AuthException.InvalidEmailVerificationToken
         }
 
         val verifiedUser = if (userAccount.emailVerified) {
@@ -49,5 +50,3 @@ class VerifyEmailService(
         )
     }
 }
-
-class InvalidEmailVerificationTokenException : RuntimeException("invalid email verification token")

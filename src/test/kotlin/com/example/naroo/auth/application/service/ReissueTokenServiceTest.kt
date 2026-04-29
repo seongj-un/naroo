@@ -1,5 +1,6 @@
 package com.example.naroo.auth.application.service
 
+import com.example.naroo.auth.application.AuthException
 import com.example.naroo.auth.port.`in`.ReissueTokenCommand
 import com.example.naroo.auth.port.`out`.IssuedJwtToken
 import com.example.naroo.auth.port.`out`.IssuedRefreshToken
@@ -67,7 +68,7 @@ class ReissueTokenServiceTest {
         assertEquals(1, tokenStore.savedRefreshTokens.size)
         assertEquals("refresh-2", tokenStore.savedRefreshTokens.single().tokenId)
 
-        assertThrows(InvalidRefreshTokenException::class.java) {
+        assertThrows(AuthException.InvalidRefreshToken::class.java) {
             service.reissue(ReissueTokenCommand(refreshToken = "refresh-1.old-secret"))
         }
     }
@@ -89,10 +90,10 @@ class ReissueTokenServiceTest {
             tokenStorePort = tokenStore,
         )
 
-        assertThrows(InvalidRefreshTokenException::class.java) {
+        assertThrows(AuthException.InvalidRefreshToken::class.java) {
             service.reissue(ReissueTokenCommand(refreshToken = "refresh-1.old-secret"))
         }
-        assertThrows(InvalidRefreshTokenException::class.java) {
+        assertThrows(AuthException.InvalidRefreshToken::class.java) {
             service.reissue(ReissueTokenCommand(refreshToken = "refresh-1.old-secret"))
         }
     }
