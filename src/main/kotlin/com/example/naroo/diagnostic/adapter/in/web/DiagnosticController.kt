@@ -12,6 +12,9 @@ import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsCommand
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsUseCase
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointCommand
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointUseCase
+import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswerCommand
+import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersCommand
+import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersUseCase
 import com.example.naroo.infrastructure.web.dto.APiWrappedResponseDto
 import com.example.naroo.infrastructure.web.dto.SuccessResponseDto
 import com.example.naroo.infrastructure.web.dto.toWrappedDto
@@ -31,6 +34,7 @@ class DiagnosticController(
     private val selectStartingPointUseCase: SelectStartingPointUseCase,
     private val createDiagnosticSessionUseCase: CreateDiagnosticSessionUseCase,
     private val getDiagnosticQuestionsUseCase: GetDiagnosticQuestionsUseCase,
+    private val submitDiagnosticAnswersUseCase: SubmitDiagnosticAnswersUseCase,
 ) {
     @PostMapping
     fun createDiagnosticSession(): ResponseEntity<APiWrappedResponseDto<CreateDiagnosticSessionResponse>> {
@@ -113,6 +117,41 @@ class DiagnosticController(
         )
     }
 
+    @PostMapping("/{diagnosticSessionId}/answers")
+    fun submitAnswers(
+        @PathVariable diagnosticSessionId: String,
+        @RequestBody request: SubmitDiagnosticAnswersRequest,
+    ): ResponseEntity<APiWrappedResponseDto<SubmitDiagnosticAnswersResponse>> {
+        val authentication = verifiedAuthentication()
+        val result = submitDiagnosticAnswersUseCase.submit(
+            SubmitDiagnosticAnswersCommand(
+                userId = authentication.userId,
+                diagnosticSessionId = diagnosticSessionId,
+                answers = request.answers.map { answer ->
+                    SubmitDiagnosticAnswerCommand(
+                        questionId = answer.questionId,
+                        selectedChoiceId = answer.selectedChoiceId,
+                    )
+                },
+            ),
+        )
+
+        return ResponseEntity.ok(
+            SubmitDiagnosticAnswersResponse(
+                diagnosticSessionId = result.diagnosticSessionId,
+                mathArea = result.mathArea,
+                status = result.status,
+                totalQuestionCount = result.totalQuestionCount,
+                correctCount = result.correctCount,
+                wrongCount = result.wrongCount,
+                unknownCount = result.unknownCount,
+                weakLinks = result.weakLinks,
+                primaryRecoveryConcept = result.primaryRecoveryConcept,
+                summary = result.summary,
+            ).toWrappedDto(),
+        )
+    }
+
     private fun verifiedAuthentication(): JwtAuthentication {
         val authentication = JwtAuthentication.current() ?: throw AuthException.Unauthorized
         if (!authentication.emailVerified) {
@@ -165,3 +204,25 @@ data class DiagnosticQuestionChoiceResponse(
     val id: String,
     val text: String,
 )
+
+data class SubmitDiagnosticAnswersRequest(
+    val answers: List<SubmitDiagnosticAnswerRequest>,
+)
+
+data class SubmitDiagnosticAnswerRequest(
+    val questionId: String,
+    val selectedChoiceId: String,
+)
+
+data class SubmitDiagnosticAnswersResponse(
+    val diagnosticSessionId: String,
+    val mathArea: MathArea,
+    val status: DiagnosticSessionStatus,
+    val totalQuestionCount: Int,
+    val correctCount: Int,
+    val wrongCount: Int,
+    val unknownCount: Int,
+    val weakLinks: List<String>,
+    val primaryRecoveryConcept: String,
+    val summary: String,
+) : SuccessResponseDto

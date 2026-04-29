@@ -19,5 +19,11 @@ object DiagnosticExceptionMapper {
 
             is DiagnosticException.DiagnosticQuestionsNotFound ->
                 ResponseEntity.status(HttpStatus.NOT_FOUND).body(DiagnosticErrorCode.DIAGNOSTIC_QUESTIONS_NOT_FOUND.toWrappedDto())
+
+            is DiagnosticException.InvalidDiagnosticAnswer ->
+                ResponseEntity.badRequest().body(DiagnosticErrorCode.INVALID_DIAGNOSTIC_ANSWER.toWrappedDto())
+
+            is DiagnosticException.DiagnosticAlreadyCompleted ->
+                ResponseEntity.status(HttpStatus.CONFLICT).body(DiagnosticErrorCode.DIAGNOSTIC_ALREADY_COMPLETED.toWrappedDto())
         }
 }

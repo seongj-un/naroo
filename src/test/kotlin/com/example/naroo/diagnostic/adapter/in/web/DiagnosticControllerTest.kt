@@ -16,6 +16,10 @@ import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsUseCase
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointCommand
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointUseCase
 import com.example.naroo.diagnostic.port.`in`.SelectedStartingPointResult
+import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswerCommand
+import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersCommand
+import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersUseCase
+import com.example.naroo.diagnostic.port.`in`.SubmittedDiagnosticResult
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.AfterEach
@@ -56,6 +60,7 @@ class DiagnosticControllerTest {
                     ),
                 )
             },
+            SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
         )
 
         authenticate(emailVerified = true)
@@ -76,6 +81,7 @@ class DiagnosticControllerTest {
             SelectStartingPointUseCase { error("select starting point should not be called") },
             CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
+            SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
         )
 
         authenticate(emailVerified = false)
@@ -102,6 +108,7 @@ class DiagnosticControllerTest {
                 )
             },
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
+            SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
         )
 
         authenticate(emailVerified = true)
@@ -121,6 +128,7 @@ class DiagnosticControllerTest {
             SelectStartingPointUseCase { error("select starting point should not be called") },
             CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
+            SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
         )
 
         authenticate(emailVerified = false)
@@ -147,6 +155,7 @@ class DiagnosticControllerTest {
             },
             CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
+            SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
         )
         authenticate(emailVerified = true)
 
@@ -171,6 +180,7 @@ class DiagnosticControllerTest {
             SelectStartingPointUseCase { error("use case should not be called") },
             CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
+            SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
         )
 
         authenticate(emailVerified = false)
@@ -183,6 +193,63 @@ class DiagnosticControllerTest {
                 ),
             )
         }
+    }
+
+    @Test
+    fun `submit answers returns completed diagnostic result for verified user`() {
+        var capturedCommand: SubmitDiagnosticAnswersCommand? = null
+        val controller = DiagnosticController(
+            SelectStartingPointUseCase { error("select starting point should not be called") },
+            CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
+            GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
+            SubmitDiagnosticAnswersUseCase { command ->
+                capturedCommand = command
+                SubmittedDiagnosticResult(
+                    diagnosticSessionId = command.diagnosticSessionId,
+                    mathArea = MathArea.FUNCTION,
+                    status = DiagnosticSessionStatus.COMPLETED,
+                    totalQuestionCount = 2,
+                    correctCount = 1,
+                    wrongCount = 0,
+                    unknownCount = 1,
+                    weakLinks = listOf("linear_function_slope"),
+                    primaryRecoveryConcept = "linear_function_slope",
+                    summary = "전체가 무너진 게 아니에요.",
+                )
+            },
+        )
+        authenticate(emailVerified = true)
+
+        val response = controller.submitAnswers(
+            diagnosticSessionId = "diagnostic-session-1",
+            request = SubmitDiagnosticAnswersRequest(
+                answers = listOf(
+                    SubmitDiagnosticAnswerRequest(
+                        questionId = "function-substitution-1",
+                        selectedChoiceId = "b",
+                    ),
+                    SubmitDiagnosticAnswerRequest(
+                        questionId = "function-slope-1",
+                        selectedChoiceId = "unknown",
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals("user-1", capturedCommand?.userId)
+        assertEquals("diagnostic-session-1", capturedCommand?.diagnosticSessionId)
+        assertEquals(
+            listOf(
+                SubmitDiagnosticAnswerCommand("function-substitution-1", "b"),
+                SubmitDiagnosticAnswerCommand("function-slope-1", "unknown"),
+            ),
+            capturedCommand?.answers,
+        )
+        assertEquals(DiagnosticSessionStatus.COMPLETED, response.body?.data?.status)
+        assertEquals(1, response.body?.data?.correctCount)
+        assertEquals(1, response.body?.data?.unknownCount)
+        assertEquals("linear_function_slope", response.body?.data?.primaryRecoveryConcept)
     }
 
     private fun authenticate(emailVerified: Boolean) {

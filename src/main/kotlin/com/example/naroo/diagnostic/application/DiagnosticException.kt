@@ -10,4 +10,8 @@ sealed class DiagnosticException : UseCaseException() {
     data object DiagnosticSessionNotFound : DiagnosticException()
 
     data object DiagnosticQuestionsNotFound : DiagnosticException()
+
+    data object InvalidDiagnosticAnswer : DiagnosticException()
+
+    data object DiagnosticAlreadyCompleted : DiagnosticException()
 }
