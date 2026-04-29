@@ -18,10 +18,28 @@ data class RecoveryMission(
     val completedAt: Instant?,
 )
 
+data class RecoveryMissionSubmission(
+    val id: RecoveryMissionSubmissionId,
+    val recoveryMissionId: RecoveryMissionId,
+    val userId: UserId,
+    val answerText: String,
+    val feedbackTitle: String,
+    val feedbackMessage: String,
+    val nextAction: String,
+    val submittedAt: Instant,
+)
+
 @JvmInline
 value class RecoveryMissionId(val value: String) {
     init {
         require(value.isNotBlank()) { "recoveryMissionId must not be blank" }
+    }
+}
+
+@JvmInline
+value class RecoveryMissionSubmissionId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "recoveryMissionSubmissionId must not be blank" }
     }
 }
 

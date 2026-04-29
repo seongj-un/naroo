@@ -16,5 +16,8 @@ object RecoveryMissionExceptionMapper {
 
             is RecoveryMissionException.RecoveryMissionAlreadyCompleted ->
                 ResponseEntity.status(HttpStatus.CONFLICT).body(RecoveryMissionErrorCode.RECOVERY_MISSION_ALREADY_COMPLETED.toWrappedDto())
+
+            is RecoveryMissionException.InvalidRecoveryMissionSubmission ->
+                ResponseEntity.status(HttpStatus.BAD_REQUEST).body(RecoveryMissionErrorCode.INVALID_RECOVERY_MISSION_SUBMISSION.toWrappedDto())
         }
 }

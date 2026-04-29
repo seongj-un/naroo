@@ -14,6 +14,9 @@ import com.example.naroo.recovery.port.`in`.CreateRecoveryMissionUseCase
 import com.example.naroo.recovery.port.`in`.GetRecoveryMissionCommand
 import com.example.naroo.recovery.port.`in`.GetRecoveryMissionUseCase
 import com.example.naroo.recovery.port.`in`.RecoveryMissionResult
+import com.example.naroo.recovery.port.`in`.RecoveryMissionSubmissionResult
+import com.example.naroo.recovery.port.`in`.SubmitRecoveryMissionCommand
+import com.example.naroo.recovery.port.`in`.SubmitRecoveryMissionUseCase
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -30,6 +33,7 @@ class RecoveryMissionController(
     private val createRecoveryMissionUseCase: CreateRecoveryMissionUseCase,
     private val getRecoveryMissionUseCase: GetRecoveryMissionUseCase,
     private val completeRecoveryMissionUseCase: CompleteRecoveryMissionUseCase,
+    private val submitRecoveryMissionUseCase: SubmitRecoveryMissionUseCase,
 ) {
     @PostMapping
     fun create(
@@ -76,6 +80,23 @@ class RecoveryMissionController(
         return result.toResponse().toWrappedDto()
     }
 
+    @PostMapping("/{recoveryMissionId}/submissions")
+    fun submit(
+        @PathVariable recoveryMissionId: String,
+        @RequestBody request: SubmitRecoveryMissionRequest,
+    ): ResponseEntity<APiWrappedResponseDto<RecoveryMissionSubmissionResponse>> {
+        val authentication = verifiedAuthentication()
+        val result = submitRecoveryMissionUseCase.submit(
+            SubmitRecoveryMissionCommand(
+                userId = authentication.userId,
+                recoveryMissionId = recoveryMissionId,
+                answerText = request.answerText,
+            ),
+        )
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(result.toResponse().toWrappedDto())
+    }
+
     private fun verifiedAuthentication(): JwtAuthentication {
         val authentication = JwtAuthentication.current() ?: throw AuthException.Unauthorized
         if (!authentication.emailVerified) {
@@ -98,10 +119,26 @@ class RecoveryMissionController(
             completedAt = completedAt,
         )
     }
+
+    private fun RecoveryMissionSubmissionResult.toResponse(): RecoveryMissionSubmissionResponse {
+        return RecoveryMissionSubmissionResponse(
+            id = id,
+            recoveryMissionId = recoveryMissionId,
+            feedbackTitle = feedbackTitle,
+            feedbackMessage = feedbackMessage,
+            nextAction = nextAction,
+            submittedAt = submittedAt,
+            mission = mission.toResponse(),
+        )
+    }
 }
 
 data class CreateRecoveryMissionRequest(
     val diagnosticSessionId: String,
+)
+
+data class SubmitRecoveryMissionRequest(
+    val answerText: String,
 )
 
 data class RecoveryMissionResponse(
@@ -115,4 +152,14 @@ data class RecoveryMissionResponse(
     val estimatedMinutes: Int,
     val createdAt: Instant,
     val completedAt: Instant?,
+) : SuccessResponseDto
+
+data class RecoveryMissionSubmissionResponse(
+    val id: String,
+    val recoveryMissionId: String,
+    val feedbackTitle: String,
+    val feedbackMessage: String,
+    val nextAction: String,
+    val submittedAt: Instant,
+    val mission: RecoveryMissionResponse,
 ) : SuccessResponseDto

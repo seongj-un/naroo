@@ -8,4 +8,6 @@ sealed class RecoveryMissionException : UseCaseException() {
     data object RecoveryMissionNotFound : RecoveryMissionException()
 
     data object RecoveryMissionAlreadyCompleted : RecoveryMissionException()
+
+    data object InvalidRecoveryMissionSubmission : RecoveryMissionException()
 }

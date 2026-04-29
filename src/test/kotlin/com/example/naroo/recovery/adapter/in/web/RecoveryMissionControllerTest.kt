@@ -9,6 +9,9 @@ import com.example.naroo.recovery.port.`in`.CreateRecoveryMissionUseCase
 import com.example.naroo.recovery.port.`in`.GetRecoveryMissionCommand
 import com.example.naroo.recovery.port.`in`.GetRecoveryMissionUseCase
 import com.example.naroo.recovery.port.`in`.RecoveryMissionResult
+import com.example.naroo.recovery.port.`in`.RecoveryMissionSubmissionResult
+import com.example.naroo.recovery.port.`in`.SubmitRecoveryMissionCommand
+import com.example.naroo.recovery.port.`in`.SubmitRecoveryMissionUseCase
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -33,6 +36,7 @@ class RecoveryMissionControllerTest {
             },
             getRecoveryMissionUseCase = GetRecoveryMissionUseCase { error("get should not be called") },
             completeRecoveryMissionUseCase = CompleteRecoveryMissionUseCase { error("complete should not be called") },
+            submitRecoveryMissionUseCase = SubmitRecoveryMissionUseCase { error("submit should not be called") },
         )
         authenticate(emailVerified = true)
 
@@ -55,6 +59,7 @@ class RecoveryMissionControllerTest {
                 recoveryMissionResult()
             },
             completeRecoveryMissionUseCase = CompleteRecoveryMissionUseCase { error("complete should not be called") },
+            submitRecoveryMissionUseCase = SubmitRecoveryMissionUseCase { error("submit should not be called") },
         )
         authenticate(emailVerified = true)
 
@@ -78,6 +83,7 @@ class RecoveryMissionControllerTest {
                     completedAt = Instant.parse("2026-04-29T03:10:00Z"),
                 )
             },
+            submitRecoveryMissionUseCase = SubmitRecoveryMissionUseCase { error("submit should not be called") },
         )
         authenticate(emailVerified = true)
 
@@ -86,6 +92,43 @@ class RecoveryMissionControllerTest {
         assertEquals("user-1", capturedCommand?.userId)
         assertEquals("mission-1", capturedCommand?.recoveryMissionId)
         assertEquals(RecoveryMissionStatus.COMPLETED, response.data?.status)
+    }
+
+    @Test
+    fun `submit stores answer and returns feedback`() {
+        var capturedCommand: SubmitRecoveryMissionCommand? = null
+        val controller = RecoveryMissionController(
+            createRecoveryMissionUseCase = CreateRecoveryMissionUseCase { error("create should not be called") },
+            getRecoveryMissionUseCase = GetRecoveryMissionUseCase { error("get should not be called") },
+            completeRecoveryMissionUseCase = CompleteRecoveryMissionUseCase { error("complete should not be called") },
+            submitRecoveryMissionUseCase = SubmitRecoveryMissionUseCase { command ->
+                capturedCommand = command
+                RecoveryMissionSubmissionResult(
+                    id = "submission-1",
+                    recoveryMissionId = "mission-1",
+                    feedbackTitle = "복구 기록 완료",
+                    feedbackMessage = "풀이 과정을 말로 남겼어요.",
+                    nextAction = "다음 약점 개념 미션 이어가기",
+                    submittedAt = Instant.parse("2026-04-29T03:10:00Z"),
+                    mission = recoveryMissionResult().copy(
+                        status = RecoveryMissionStatus.COMPLETED,
+                        completedAt = Instant.parse("2026-04-29T03:10:00Z"),
+                    ),
+                )
+            },
+        )
+        authenticate(emailVerified = true)
+
+        val response = controller.submit(
+            recoveryMissionId = "mission-1",
+            request = SubmitRecoveryMissionRequest(answerText = "x 앞의 숫자가 기울기라서 -3을 찾았습니다."),
+        )
+
+        assertEquals(HttpStatus.CREATED, response.statusCode)
+        assertEquals("user-1", capturedCommand?.userId)
+        assertEquals("mission-1", capturedCommand?.recoveryMissionId)
+        assertEquals("submission-1", response.body?.data?.id)
+        assertEquals(RecoveryMissionStatus.COMPLETED, response.body?.data?.mission?.status)
     }
 
     private fun authenticate(emailVerified: Boolean) {
