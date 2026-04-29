@@ -1,10 +1,10 @@
 package com.example.naroo.diagnostic.adapter.`out`.persistence
 
+import com.example.naroo.diagnostic.domain.DiagnosticSession
+import com.example.naroo.diagnostic.domain.DiagnosticSessionId
+import com.example.naroo.diagnostic.domain.DiagnosticSessionStatus
 import com.example.naroo.diagnostic.domain.MathArea
-import com.example.naroo.diagnostic.domain.StartingPointNote
-import com.example.naroo.diagnostic.domain.StartingPointSelection
 import com.example.naroo.diagnostic.domain.StartingPointSelectionId
-import com.example.naroo.diagnostic.domain.StartingPointSelectionType
 import com.example.naroo.user.domain.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -18,8 +18,8 @@ import java.time.Instant
 
 @SpringBootTest
 @Transactional
-class JpaStartingPointSelectionPersistenceAdapterTest(
-    @Autowired private val adapter: JpaStartingPointSelectionPersistenceAdapter,
+class JpaDiagnosticSessionPersistenceAdapterTest(
+    @Autowired private val adapter: JpaDiagnosticSessionPersistenceAdapter,
     @Autowired private val jdbcTemplate: JdbcTemplate,
 ) {
     @BeforeEach
@@ -49,44 +49,50 @@ class JpaStartingPointSelectionPersistenceAdapterTest(
             "UNKNOWN",
             Instant.parse("2026-04-29T00:00:00Z"),
         )
-    }
-
-    @Test
-    fun `saves and finds starting point by user id`() {
-        val selection = startingPointSelection()
-
-        val saved = adapter.save(selection)
-
-        assertEquals(selection, saved)
-        assertEquals(selection, adapter.findByUserId(UserId("user-1")))
-    }
-
-    @Test
-    fun `updates existing starting point`() {
-        adapter.save(startingPointSelection())
-
-        val updated = adapter.save(
-            startingPointSelection().copy(
-                selectionType = StartingPointSelectionType.STUDY_INTEREST,
-                mathArea = MathArea.SEQUENCE,
-                note = null,
-                updatedAt = Instant.parse("2026-04-29T01:00:00Z"),
-            ),
+        jdbcTemplate.update(
+            """
+                insert into diagnostic_starting_points (
+                    id,
+                    user_id,
+                    selection_type,
+                    math_area,
+                    note,
+                    created_at,
+                    updated_at
+                ) values (?, ?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+            "starting-point-1",
+            "user-1",
+            "WEAK_AREA",
+            "FUNCTION",
+            "함수가 어려워요",
+            Instant.parse("2026-04-29T00:00:00Z"),
+            Instant.parse("2026-04-29T00:00:00Z"),
         )
-
-        assertEquals(StartingPointSelectionType.STUDY_INTEREST, updated.selectionType)
-        assertEquals(MathArea.SEQUENCE, updated.mathArea)
-        assertNull(updated.note)
-        assertEquals(updated, adapter.findByUserId(UserId("user-1")))
     }
 
-    private fun startingPointSelection(): StartingPointSelection {
-        return StartingPointSelection(
-            id = StartingPointSelectionId("starting-point-1"),
+    @Test
+    fun `saves and finds diagnostic session`() {
+        val session = diagnosticSession()
+
+        val saved = adapter.save(session)
+
+        assertEquals(session, saved)
+        assertEquals(session, adapter.findById(session.id))
+    }
+
+    @Test
+    fun `returns null when diagnostic session does not exist`() {
+        assertNull(adapter.findById(DiagnosticSessionId("missing-session")))
+    }
+
+    private fun diagnosticSession(): DiagnosticSession {
+        return DiagnosticSession(
+            id = DiagnosticSessionId("diagnostic-session-1"),
             userId = UserId("user-1"),
-            selectionType = StartingPointSelectionType.WEAK_AREA,
+            startingPointSelectionId = StartingPointSelectionId("starting-point-1"),
             mathArea = MathArea.FUNCTION,
-            note = StartingPointNote.fromNullable("함수가 어려워요"),
+            status = DiagnosticSessionStatus.READY,
             createdAt = Instant.parse("2026-04-29T00:00:00Z"),
             updatedAt = Instant.parse("2026-04-29T00:00:00Z"),
         )

@@ -1,8 +1,11 @@
 package com.example.naroo.diagnostic.adapter.`in`.web
 
 import com.example.naroo.auth.adapter.`in`.web.JwtAuthentication
+import com.example.naroo.diagnostic.domain.DiagnosticSessionStatus
 import com.example.naroo.diagnostic.domain.MathArea
 import com.example.naroo.diagnostic.domain.StartingPointSelectionType
+import com.example.naroo.diagnostic.port.`in`.CreateDiagnosticSessionCommand
+import com.example.naroo.diagnostic.port.`in`.CreateDiagnosticSessionUseCase
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointCommand
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointUseCase
 import jakarta.servlet.http.HttpServletRequest
@@ -18,16 +21,34 @@ import java.time.Instant
 @RequestMapping("/api/diagnostics")
 class DiagnosticController(
     private val selectStartingPointUseCase: SelectStartingPointUseCase,
+    private val createDiagnosticSessionUseCase: CreateDiagnosticSessionUseCase,
 ) {
+    @PostMapping
+    fun createDiagnosticSession(httpRequest: HttpServletRequest): ResponseEntity<CreateDiagnosticSessionResponse> {
+        val authentication = verifiedAuthentication(httpRequest)
+        val result = createDiagnosticSessionUseCase.create(
+            CreateDiagnosticSessionCommand(userId = authentication.userId),
+        )
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+            CreateDiagnosticSessionResponse(
+                id = result.id,
+                userId = result.userId,
+                startingPointSelectionId = result.startingPointSelectionId,
+                mathArea = result.mathArea,
+                status = result.status,
+                createdAt = result.createdAt,
+                updatedAt = result.updatedAt,
+            ),
+        )
+    }
+
     @PostMapping("/starting-point")
     fun selectStartingPoint(
         httpRequest: HttpServletRequest,
         @RequestBody request: SelectStartingPointRequest,
     ): ResponseEntity<SelectStartingPointResponse> {
-        val authentication = httpRequest.getAttribute(JwtAuthentication.REQUEST_ATTRIBUTE) as JwtAuthentication
-        if (!authentication.emailVerified) {
-            throw EmailVerificationRequiredException()
-        }
+        val authentication = verifiedAuthentication(httpRequest)
 
         val result = selectStartingPointUseCase.select(
             SelectStartingPointCommand(
@@ -50,7 +71,25 @@ class DiagnosticController(
             ),
         )
     }
+
+    private fun verifiedAuthentication(httpRequest: HttpServletRequest): JwtAuthentication {
+        val authentication = httpRequest.getAttribute(JwtAuthentication.REQUEST_ATTRIBUTE) as JwtAuthentication
+        if (!authentication.emailVerified) {
+            throw EmailVerificationRequiredException()
+        }
+        return authentication
+    }
 }
+
+data class CreateDiagnosticSessionResponse(
+    val id: String,
+    val userId: String,
+    val startingPointSelectionId: String,
+    val mathArea: MathArea,
+    val status: DiagnosticSessionStatus,
+    val createdAt: Instant,
+    val updatedAt: Instant,
+)
 
 data class SelectStartingPointRequest(
     val selectionType: StartingPointSelectionType,

@@ -1,8 +1,12 @@
 package com.example.naroo.diagnostic.adapter.`in`.web
 
 import com.example.naroo.auth.adapter.`in`.web.JwtAuthentication
+import com.example.naroo.diagnostic.domain.DiagnosticSessionStatus
 import com.example.naroo.diagnostic.domain.MathArea
 import com.example.naroo.diagnostic.domain.StartingPointSelectionType
+import com.example.naroo.diagnostic.port.`in`.CreateDiagnosticSessionCommand
+import com.example.naroo.diagnostic.port.`in`.CreateDiagnosticSessionUseCase
+import com.example.naroo.diagnostic.port.`in`.CreatedDiagnosticSessionResult
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointCommand
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointUseCase
 import com.example.naroo.diagnostic.port.`in`.SelectedStartingPointResult
@@ -14,6 +18,47 @@ import org.springframework.mock.web.MockHttpServletRequest
 import java.time.Instant
 
 class DiagnosticControllerTest {
+    @Test
+    fun `create diagnostic session returns created response for verified user`() {
+        var capturedCommand: CreateDiagnosticSessionCommand? = null
+        val controller = DiagnosticController(
+            SelectStartingPointUseCase { error("select starting point should not be called") },
+            CreateDiagnosticSessionUseCase { command ->
+                capturedCommand = command
+                CreatedDiagnosticSessionResult(
+                    id = "diagnostic-session-1",
+                    userId = command.userId,
+                    startingPointSelectionId = "starting-point-1",
+                    mathArea = MathArea.FUNCTION,
+                    status = DiagnosticSessionStatus.READY,
+                    createdAt = Instant.parse("2026-04-29T00:00:00Z"),
+                    updatedAt = Instant.parse("2026-04-29T00:00:00Z"),
+                )
+            },
+        )
+
+        val response = controller.createDiagnosticSession(authenticatedRequest(emailVerified = true))
+
+        assertEquals(HttpStatus.CREATED, response.statusCode)
+        assertEquals("user-1", capturedCommand?.userId)
+        assertEquals("diagnostic-session-1", response.body?.id)
+        assertEquals("starting-point-1", response.body?.startingPointSelectionId)
+        assertEquals(MathArea.FUNCTION, response.body?.mathArea)
+        assertEquals(DiagnosticSessionStatus.READY, response.body?.status)
+    }
+
+    @Test
+    fun `create diagnostic session requires verified email`() {
+        val controller = DiagnosticController(
+            SelectStartingPointUseCase { error("select starting point should not be called") },
+            CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
+        )
+
+        assertThrows(EmailVerificationRequiredException::class.java) {
+            controller.createDiagnosticSession(authenticatedRequest(emailVerified = false))
+        }
+    }
+
     @Test
     fun `select starting point returns created response for verified user`() {
         var capturedCommand: SelectStartingPointCommand? = null
@@ -30,6 +75,7 @@ class DiagnosticControllerTest {
                     updatedAt = Instant.parse("2026-04-29T00:00:00Z"),
                 )
             },
+            CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
         )
         val httpRequest = authenticatedRequest(emailVerified = true)
 
@@ -53,6 +99,7 @@ class DiagnosticControllerTest {
     fun `select starting point requires verified email`() {
         val controller = DiagnosticController(
             SelectStartingPointUseCase { error("use case should not be called") },
+            CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
         )
 
         assertThrows(EmailVerificationRequiredException::class.java) {

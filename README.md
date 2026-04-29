@@ -20,14 +20,16 @@ Default local services:
 - Redis: `localhost:6379`
 - Email verification sender: local logging adapter. Check the application log for the verification token.
 
-Useful auth endpoints:
+Useful endpoints:
 
+- `GET /api/math-areas`
 - `POST /api/auth/sign-up`
 - `POST /api/auth/email/verify`
 - `POST /api/auth/login`
 - `POST /api/auth/reissue`
 - `GET /api/auth/me`
 - `POST /api/diagnostics/starting-point`
+- `POST /api/diagnostics`
 
 Example signup body:
 
@@ -57,6 +59,13 @@ Example starting point body:
   "mathArea": "FUNCTION",
   "note": "함수가 제일 헷갈려요"
 }
+```
+
+Create a diagnostic session after selecting a starting point:
+
+```bash
+curl -X POST http://localhost:8080/api/diagnostics \
+  -H "Authorization: Bearer <access-token>"
 ```
 
 Stop local infrastructure:

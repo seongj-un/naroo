@@ -56,6 +56,7 @@ class JpaUserAccountPersistenceAdapterTest(
                 )
             """.trimIndent(),
         )
+        jdbcTemplate.update("delete from diagnostic_sessions")
         jdbcTemplate.update("delete from diagnostic_starting_points")
         jdbcTemplate.update("delete from user_accounts")
     }
