@@ -15,6 +15,7 @@ import com.example.naroo.recovery.domain.RecoveryMissionStatus
 import com.example.naroo.recovery.port.`in`.CreateRecoveryMissionCommand
 import com.example.naroo.recovery.port.`out`.RecoveryMissionIdGeneratorPort
 import com.example.naroo.recovery.port.`out`.RecoveryMissionRepositoryPort
+import com.example.naroo.recovery.port.`out`.RecoveryMissionTemplateRepositoryPort
 import com.example.naroo.user.domain.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -33,6 +34,7 @@ class CreateRecoveryMissionServiceTest {
             ),
             diagnosticResultRepositoryPort = FakeRecoveryDiagnosticResultRepository(diagnosticResult()),
             recoveryMissionRepositoryPort = repository,
+            recoveryMissionTemplateRepositoryPort = FakeRecoveryMissionTemplateRepository(recoveryMissionTemplates()),
             recoveryMissionIdGeneratorPort = RecoveryMissionIdGeneratorPort { RecoveryMissionId("mission-1") },
             clock = Clock.fixed(Instant.parse("2026-04-29T03:00:00Z"), ZoneOffset.UTC),
         )
@@ -63,6 +65,7 @@ class CreateRecoveryMissionServiceTest {
             ),
             diagnosticResultRepositoryPort = FakeRecoveryDiagnosticResultRepository(diagnosticResult()),
             recoveryMissionRepositoryPort = repository,
+            recoveryMissionTemplateRepositoryPort = FakeRecoveryMissionTemplateRepository(recoveryMissionTemplates()),
             recoveryMissionIdGeneratorPort = RecoveryMissionIdGeneratorPort { error("id should not be generated") },
             clock = Clock.fixed(Instant.parse("2026-04-29T03:00:00Z"), ZoneOffset.UTC),
         )
@@ -97,6 +100,7 @@ class CreateRecoveryMissionServiceTest {
                 ),
             ),
             recoveryMissionRepositoryPort = repository,
+            recoveryMissionTemplateRepositoryPort = FakeRecoveryMissionTemplateRepository(recoveryMissionTemplates()),
             recoveryMissionIdGeneratorPort = RecoveryMissionIdGeneratorPort { RecoveryMissionId("mission-2") },
             clock = Clock.fixed(Instant.parse("2026-04-29T03:20:00Z"), ZoneOffset.UTC),
         )
@@ -120,6 +124,7 @@ class CreateRecoveryMissionServiceTest {
             diagnosticSessionRepositoryPort = FakeRecoveryDiagnosticSessionRepository(diagnosticSession()),
             diagnosticResultRepositoryPort = FakeRecoveryDiagnosticResultRepository(null),
             recoveryMissionRepositoryPort = CapturingRecoveryMissionRepository(),
+            recoveryMissionTemplateRepositoryPort = FakeRecoveryMissionTemplateRepository(recoveryMissionTemplates()),
             recoveryMissionIdGeneratorPort = RecoveryMissionIdGeneratorPort { RecoveryMissionId("mission-1") },
             clock = Clock.fixed(Instant.parse("2026-04-29T03:00:00Z"), ZoneOffset.UTC),
         )
@@ -175,6 +180,33 @@ class CreateRecoveryMissionServiceTest {
             estimatedMinutes = 10,
             createdAt = Instant.parse("2026-04-29T03:00:00Z"),
             completedAt = null,
+        )
+    }
+
+    private fun recoveryMissionTemplates(): List<RecoveryMissionTemplate> {
+        return listOf(
+            RecoveryMissionTemplate(
+                conceptTag = "linear_function_slope",
+                title = "일차함수 기울기 10분 복구 미션",
+                prompt = "y = ax + b에서 기울기가 어떤 숫자인지 찾는 연습만 해요.",
+                hints = listOf(
+                    "x 앞에 붙은 숫자를 먼저 찾아봐요.",
+                    "부호도 같이 봐야 해요.",
+                    "상수항은 시작 높이일 뿐이에요.",
+                ),
+                estimatedMinutes = 10,
+            ),
+            RecoveryMissionTemplate(
+                conceptTag = "function_substitution",
+                title = "함수값 대입 10분 복구 미션",
+                prompt = "식에 x값을 넣고 y값이 어떻게 바뀌는지 한 줄씩 확인해요.",
+                hints = listOf(
+                    "x가 들어간 자리에 주어진 숫자만 먼저 넣어봐요.",
+                    "곱셈과 덧셈 순서를 나눠서 한 줄씩 적어봐요.",
+                    "계산 결과가 y값이에요.",
+                ),
+                estimatedMinutes = 10,
+            ),
         )
     }
 }
@@ -242,5 +274,17 @@ private class CapturingRecoveryMissionRepository(
         this.mission = mission
         saved += mission
         return mission
+    }
+}
+
+private class FakeRecoveryMissionTemplateRepository(
+    private val templates: List<RecoveryMissionTemplate>,
+) : RecoveryMissionTemplateRepositoryPort {
+    override fun findByConceptTag(conceptTag: String): RecoveryMissionTemplate? {
+        return templates.firstOrNull { it.conceptTag == conceptTag }
+    }
+
+    override fun findAll(): List<RecoveryMissionTemplate> {
+        return templates.sortedBy { it.conceptTag }
     }
 }

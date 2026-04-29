@@ -19,5 +19,8 @@ object RecoveryMissionExceptionMapper {
 
             is RecoveryMissionException.InvalidRecoveryMissionSubmission ->
                 ResponseEntity.status(HttpStatus.BAD_REQUEST).body(RecoveryMissionErrorCode.INVALID_RECOVERY_MISSION_SUBMISSION.toWrappedDto())
+
+            is RecoveryMissionException.RecoveryMissionTemplateNotFound ->
+                ResponseEntity.status(HttpStatus.CONFLICT).body(RecoveryMissionErrorCode.RECOVERY_MISSION_TEMPLATE_NOT_FOUND.toWrappedDto())
         }
 }

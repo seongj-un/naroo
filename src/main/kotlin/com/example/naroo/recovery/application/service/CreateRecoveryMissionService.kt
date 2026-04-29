@@ -12,6 +12,7 @@ import com.example.naroo.recovery.port.`in`.CreateRecoveryMissionUseCase
 import com.example.naroo.recovery.port.`in`.RecoveryMissionResult
 import com.example.naroo.recovery.port.`out`.RecoveryMissionIdGeneratorPort
 import com.example.naroo.recovery.port.`out`.RecoveryMissionRepositoryPort
+import com.example.naroo.recovery.port.`out`.RecoveryMissionTemplateRepositoryPort
 import com.example.naroo.user.domain.UserId
 import org.springframework.stereotype.Service
 import java.time.Clock
@@ -22,6 +23,7 @@ class CreateRecoveryMissionService(
     private val diagnosticSessionRepositoryPort: DiagnosticSessionRepositoryPort,
     private val diagnosticResultRepositoryPort: DiagnosticResultRepositoryPort,
     private val recoveryMissionRepositoryPort: RecoveryMissionRepositoryPort,
+    private val recoveryMissionTemplateRepositoryPort: RecoveryMissionTemplateRepositoryPort,
     private val recoveryMissionIdGeneratorPort: RecoveryMissionIdGeneratorPort,
     private val clock: Clock,
 ) : CreateRecoveryMissionUseCase {
@@ -42,7 +44,8 @@ class CreateRecoveryMissionService(
         val nextConcept = result.nextRecoveryConceptAfter(existingMissions.map { it.conceptTag }.toSet())
             ?: return existingMissions.lastOrNull()?.toResult()
                 ?: throw RecoveryMissionException.DiagnosticResultRequired
-        val template = RecoveryMissionTemplateCatalog.forConcept(nextConcept)
+        val template = recoveryMissionTemplateRepositoryPort.findByConceptTag(nextConcept)
+            ?: throw RecoveryMissionException.RecoveryMissionTemplateNotFound
         val now = Instant.now(clock)
         val mission = RecoveryMission(
             id = recoveryMissionIdGeneratorPort.generate(),
