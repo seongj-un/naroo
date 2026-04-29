@@ -1,7 +1,7 @@
-package com.example.naroo.user.adapter.`out`.security
+package com.example.naroo.auth.adapter.`out`.security
 
+import com.example.naroo.auth.port.`out`.PasswordHasherPort
 import com.example.naroo.user.domain.PasswordHash
-import com.example.naroo.user.port.`out`.PasswordHasherPort
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Component
 

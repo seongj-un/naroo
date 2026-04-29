@@ -1,4 +1,4 @@
-package com.example.naroo.user.port.`in`
+package com.example.naroo.auth.port.`in`
 
 import com.example.naroo.user.domain.MathStatus
 import com.example.naroo.user.domain.UserId

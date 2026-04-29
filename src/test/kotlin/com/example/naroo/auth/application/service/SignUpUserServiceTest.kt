@@ -1,12 +1,12 @@
-package com.example.naroo.user.application.service
+package com.example.naroo.auth.application.service
 
+import com.example.naroo.auth.port.`in`.SignUpUserCommand
+import com.example.naroo.auth.port.`out`.PasswordHasherPort
 import com.example.naroo.user.domain.LoginId
 import com.example.naroo.user.domain.MathStatus
 import com.example.naroo.user.domain.PasswordHash
 import com.example.naroo.user.domain.UserAccount
 import com.example.naroo.user.domain.UserId
-import com.example.naroo.user.port.`in`.SignUpUserCommand
-import com.example.naroo.user.port.`out`.PasswordHasherPort
 import com.example.naroo.user.port.`out`.UserAccountRepositoryPort
 import com.example.naroo.user.port.`out`.UserIdGeneratorPort
 import org.junit.jupiter.api.Assertions.assertEquals

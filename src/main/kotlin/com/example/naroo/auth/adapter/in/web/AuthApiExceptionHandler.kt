@@ -1,5 +1,6 @@
 package com.example.naroo.auth.adapter.`in`.web
 
+import com.example.naroo.auth.application.service.DuplicateLoginIdException
 import com.example.naroo.auth.application.service.InvalidLoginCredentialsException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -8,6 +9,20 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
 class AuthApiExceptionHandler {
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleBadRequest(exception: IllegalArgumentException): ResponseEntity<AuthApiErrorResponse> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+            AuthApiErrorResponse(message = exception.message ?: "bad request"),
+        )
+    }
+
+    @ExceptionHandler(DuplicateLoginIdException::class)
+    fun handleDuplicateLoginId(exception: DuplicateLoginIdException): ResponseEntity<AuthApiErrorResponse> {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+            AuthApiErrorResponse(message = exception.message ?: "loginId already exists"),
+        )
+    }
+
     @ExceptionHandler(InvalidLoginCredentialsException::class)
     fun handleInvalidLoginCredentials(exception: InvalidLoginCredentialsException): ResponseEntity<AuthApiErrorResponse> {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
