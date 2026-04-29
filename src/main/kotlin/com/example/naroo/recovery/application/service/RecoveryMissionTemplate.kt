@@ -4,6 +4,7 @@ data class RecoveryMissionTemplate(
     val title: String,
     val prompt: String,
     val hints: List<String>,
+    val estimatedMinutes: Int = 10,
 )
 
 object RecoveryMissionTemplateCatalog {
@@ -54,6 +55,60 @@ object RecoveryMissionTemplateCatalog {
                 "모르는 수를 x라고 정하고 문장에 표시해봐요.",
                 "더한다, 뺀다, 두 배 같은 표현을 작은 식으로 바꿔봐요.",
                 "같다는 표현이 나오는 곳이 등호가 들어갈 자리예요.",
+            ),
+        ),
+        "triangle_angle_sum" to RecoveryMissionTemplate(
+            title = "삼각형 각도 합 복구 미션",
+            prompt = "삼각형의 세 각을 더하면 항상 180도라는 사실만 사용해요.",
+            hints = listOf(
+                "이미 아는 두 각을 먼저 더해봐요.",
+                "180도에서 그 합을 빼면 남은 각이에요.",
+                "그림이 달라도 삼각형이면 각의 합은 같아요.",
+            ),
+        ),
+        "coordinate_translation" to RecoveryMissionTemplate(
+            title = "좌표 이동 한 칸씩 확인 미션",
+            prompt = "x축, y축 방향 이동이 좌표의 어느 숫자를 바꾸는지 분리해서 봐요.",
+            hints = listOf(
+                "x축 방향 이동은 첫 번째 숫자만 바꿔요.",
+                "y축 방향 이동은 두 번째 숫자만 바꿔요.",
+                "오른쪽과 위쪽은 더하고, 왼쪽과 아래쪽은 빼요.",
+            ),
+        ),
+        "basic_probability" to RecoveryMissionTemplate(
+            title = "기본 확률 분수 미션",
+            prompt = "전체 경우 중 원하는 경우가 몇 개인지만 분수로 써봐요.",
+            hints = listOf(
+                "분모에는 전체 가능한 경우의 수를 써요.",
+                "분자에는 원하는 결과의 수를 써요.",
+                "동전 한 번은 앞면과 뒷면, 전체 2가지예요.",
+            ),
+        ),
+        "permutation_counting" to RecoveryMissionTemplate(
+            title = "순서 세기 10분 복구 미션",
+            prompt = "자리를 하나씩 채운다고 생각하고 가능한 선택지를 곱해요.",
+            hints = listOf(
+                "첫 번째 자리에 올 수 있는 사람 수를 먼저 세요.",
+                "한 명을 세우면 다음 자리는 선택지가 하나 줄어요.",
+                "각 자리의 선택지를 곱하면 전체 방법 수예요.",
+            ),
+        ),
+        "arithmetic_sequence_pattern" to RecoveryMissionTemplate(
+            title = "등차 패턴 찾기 미션",
+            prompt = "앞뒤 항의 차이가 일정한지 확인하고 다음 항을 이어 써요.",
+            hints = listOf(
+                "연속한 두 수의 차이를 먼저 계산해요.",
+                "차이가 같다면 마지막 수에 그 차이를 더해요.",
+                "패턴을 말로 설명하면 실수가 줄어요.",
+            ),
+        ),
+        "arithmetic_sequence_nth_term" to RecoveryMissionTemplate(
+            title = "등차수열 n번째 항 미션",
+            prompt = "첫째항에서 공차를 몇 번 더해야 하는지 세어봐요.",
+            hints = listOf(
+                "셋째항은 첫째항에서 공차를 두 번 더한 값이에요.",
+                "항 번호보다 더하는 횟수는 하나 적어요.",
+                "먼저 둘째항을 구하고 셋째항으로 넘어가도 좋아요.",
             ),
         ),
     )

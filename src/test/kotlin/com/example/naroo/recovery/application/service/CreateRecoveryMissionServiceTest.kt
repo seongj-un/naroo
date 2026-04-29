@@ -79,6 +79,42 @@ class CreateRecoveryMissionServiceTest {
     }
 
     @Test
+    fun `creates next weak link mission after previous concept is completed`() {
+        val existingMission = recoveryMission().copy(
+            conceptTag = "linear_function_slope",
+            status = RecoveryMissionStatus.COMPLETED,
+            completedAt = Instant.parse("2026-04-29T03:10:00Z"),
+        )
+        val repository = CapturingRecoveryMissionRepository(existingMission)
+        val service = CreateRecoveryMissionService(
+            diagnosticSessionRepositoryPort = FakeRecoveryDiagnosticSessionRepository(
+                diagnosticSession().copy(status = DiagnosticSessionStatus.COMPLETED),
+            ),
+            diagnosticResultRepositoryPort = FakeRecoveryDiagnosticResultRepository(
+                diagnosticResult().copy(
+                    weakLinks = listOf("linear_function_slope", "function_substitution"),
+                    primaryRecoveryConcept = "linear_function_slope",
+                ),
+            ),
+            recoveryMissionRepositoryPort = repository,
+            recoveryMissionIdGeneratorPort = RecoveryMissionIdGeneratorPort { RecoveryMissionId("mission-2") },
+            clock = Clock.fixed(Instant.parse("2026-04-29T03:20:00Z"), ZoneOffset.UTC),
+        )
+
+        val result = service.create(
+            CreateRecoveryMissionCommand(
+                userId = "user-1",
+                diagnosticSessionId = "diagnostic-session-1",
+            ),
+        )
+
+        assertEquals("mission-2", result.id)
+        assertEquals("function_substitution", result.conceptTag)
+        assertEquals("함수값 대입 10분 복구 미션", result.title)
+        assertEquals("function_substitution", repository.saved.single().conceptTag)
+    }
+
+    @Test
     fun `rejects mission creation before result exists`() {
         val service = CreateRecoveryMissionService(
             diagnosticSessionRepositoryPort = FakeRecoveryDiagnosticSessionRepository(diagnosticSession()),
@@ -181,6 +217,13 @@ private class CapturingRecoveryMissionRepository(
         diagnosticSessionId: DiagnosticSessionId,
     ): RecoveryMission? {
         return mission?.takeIf { it.userId == userId && it.diagnosticSessionId == diagnosticSessionId }
+    }
+
+    override fun findAllByUserIdAndDiagnosticSessionId(
+        userId: UserId,
+        diagnosticSessionId: DiagnosticSessionId,
+    ): List<RecoveryMission> {
+        return listOfNotNull(mission?.takeIf { it.userId == userId && it.diagnosticSessionId == diagnosticSessionId })
     }
 
     override fun save(mission: RecoveryMission): RecoveryMission {

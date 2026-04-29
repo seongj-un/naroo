@@ -103,6 +103,13 @@ private class CapturingSubmitRecoveryMissionRepository(
         return mission?.takeIf { it.userId == userId && it.diagnosticSessionId == diagnosticSessionId }
     }
 
+    override fun findAllByUserIdAndDiagnosticSessionId(
+        userId: UserId,
+        diagnosticSessionId: DiagnosticSessionId,
+    ): List<RecoveryMission> {
+        return listOfNotNull(mission?.takeIf { it.userId == userId && it.diagnosticSessionId == diagnosticSessionId })
+    }
+
     override fun save(mission: RecoveryMission): RecoveryMission {
         this.mission = mission
         saved += mission

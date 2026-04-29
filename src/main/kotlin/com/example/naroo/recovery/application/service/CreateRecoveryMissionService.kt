@@ -32,27 +32,39 @@ class CreateRecoveryMissionService(
             ?.takeIf { it.userId == userId && it.status == DiagnosticSessionStatus.COMPLETED }
             ?: throw RecoveryMissionException.DiagnosticResultRequired
 
-        recoveryMissionRepositoryPort.findByUserIdAndDiagnosticSessionId(userId, diagnosticSessionId)
-            ?.let { return it.toResult() }
-
         val result = diagnosticResultRepositoryPort.findByDiagnosticSessionId(session.id)
             ?: throw RecoveryMissionException.DiagnosticResultRequired
-        val template = RecoveryMissionTemplateCatalog.forConcept(result.primaryRecoveryConcept)
+        val existingMissions = recoveryMissionRepositoryPort.findAllByUserIdAndDiagnosticSessionId(userId, diagnosticSessionId)
+        existingMissions.firstOrNull { it.status == RecoveryMissionStatus.IN_PROGRESS }?.let {
+            return it.toResult()
+        }
+
+        val nextConcept = result.nextRecoveryConceptAfter(existingMissions.map { it.conceptTag }.toSet())
+            ?: return existingMissions.lastOrNull()?.toResult()
+                ?: throw RecoveryMissionException.DiagnosticResultRequired
+        val template = RecoveryMissionTemplateCatalog.forConcept(nextConcept)
         val now = Instant.now(clock)
         val mission = RecoveryMission(
             id = recoveryMissionIdGeneratorPort.generate(),
             userId = userId,
             diagnosticSessionId = diagnosticSessionId,
-            conceptTag = result.primaryRecoveryConcept,
+            conceptTag = nextConcept,
             title = template.title,
             prompt = template.prompt,
             hints = template.hints,
             status = RecoveryMissionStatus.IN_PROGRESS,
-            estimatedMinutes = 10,
+            estimatedMinutes = template.estimatedMinutes,
             createdAt = now,
             completedAt = null,
         )
 
         return recoveryMissionRepositoryPort.save(mission).toResult()
+    }
+
+    private fun com.example.naroo.diagnostic.domain.DiagnosticResult.nextRecoveryConceptAfter(
+        completedOrCreatedConcepts: Set<String>,
+    ): String? {
+        return weakLinks.firstOrNull { it !in completedOrCreatedConcepts }
+            ?: primaryRecoveryConcept.takeIf { it !in completedOrCreatedConcepts }
     }
 }

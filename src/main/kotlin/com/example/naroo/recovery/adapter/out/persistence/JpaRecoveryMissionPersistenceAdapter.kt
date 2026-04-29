@@ -31,6 +31,16 @@ class JpaRecoveryMissionPersistenceAdapter(
         return repository.findByUserIdAndDiagnosticSessionId(userId.value, diagnosticSessionId.value)?.toDomain()
     }
 
+    override fun findAllByUserIdAndDiagnosticSessionId(
+        userId: UserId,
+        diagnosticSessionId: DiagnosticSessionId,
+    ): List<RecoveryMission> {
+        return repository.findAllByUserIdAndDiagnosticSessionIdOrderByCreatedAtAsc(
+            userId.value,
+            diagnosticSessionId.value,
+        ).map(RecoveryMissionJpaEntity::toDomain)
+    }
+
     override fun save(mission: RecoveryMission): RecoveryMission {
         return repository.saveAndFlush(RecoveryMissionJpaEntity.from(mission)).toDomain()
     }
@@ -38,6 +48,10 @@ class JpaRecoveryMissionPersistenceAdapter(
 
 interface SpringDataRecoveryMissionJpaRepository : JpaRepository<RecoveryMissionJpaEntity, String> {
     fun findByUserIdAndDiagnosticSessionId(userId: String, diagnosticSessionId: String): RecoveryMissionJpaEntity?
+    fun findAllByUserIdAndDiagnosticSessionIdOrderByCreatedAtAsc(
+        userId: String,
+        diagnosticSessionId: String,
+    ): List<RecoveryMissionJpaEntity>
 }
 
 @Entity

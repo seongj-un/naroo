@@ -8,5 +8,6 @@ import com.example.naroo.user.domain.UserId
 interface RecoveryMissionRepositoryPort {
     fun findById(id: RecoveryMissionId): RecoveryMission?
     fun findByUserIdAndDiagnosticSessionId(userId: UserId, diagnosticSessionId: DiagnosticSessionId): RecoveryMission?
+    fun findAllByUserIdAndDiagnosticSessionId(userId: UserId, diagnosticSessionId: DiagnosticSessionId): List<RecoveryMission>
     fun save(mission: RecoveryMission): RecoveryMission
 }
