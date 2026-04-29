@@ -8,6 +8,7 @@ import com.example.naroo.auth.port.`out`.RefreshTokenPort
 import com.example.naroo.auth.port.`out`.StoredAccessToken
 import com.example.naroo.auth.port.`out`.StoredRefreshToken
 import com.example.naroo.auth.port.`out`.TokenStorePort
+import com.example.naroo.user.domain.EmailAddress
 import com.example.naroo.user.domain.LoginId
 import com.example.naroo.user.domain.MathStatus
 import com.example.naroo.user.domain.Nickname
@@ -24,6 +25,8 @@ class ReissueTokenServiceTest {
     private val userAccount = UserAccount(
         id = UserId("user-1"),
         loginId = LoginId.from("student01"),
+        email = EmailAddress.from("student01@example.com"),
+        emailVerified = false,
         passwordHash = PasswordHash("hashed-password"),
         nickname = Nickname.from("나루"),
         mathStatus = MathStatus.UNKNOWN,
@@ -143,6 +146,10 @@ private class FakeReissueUserRepository(
 ) : UserAccountRepositoryPort {
     override fun existsByLoginId(loginId: LoginId): Boolean {
         return userAccount?.loginId == loginId
+    }
+
+    override fun existsByEmail(email: EmailAddress): Boolean {
+        return userAccount?.email == email
     }
 
     override fun findByLoginId(loginId: LoginId): UserAccount? {

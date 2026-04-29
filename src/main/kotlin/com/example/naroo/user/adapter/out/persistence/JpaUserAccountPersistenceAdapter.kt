@@ -1,6 +1,7 @@
 package com.example.naroo.user.adapter.`out`.persistence
 
 import com.example.naroo.user.domain.LoginId
+import com.example.naroo.user.domain.EmailAddress
 import com.example.naroo.user.domain.MathStatus
 import com.example.naroo.user.domain.Nickname
 import com.example.naroo.user.domain.PasswordHash
@@ -27,6 +28,10 @@ class JpaUserAccountPersistenceAdapter(
         return repository.existsByLoginId(loginId.value)
     }
 
+    override fun existsByEmail(email: EmailAddress): Boolean {
+        return repository.existsByEmail(email.value)
+    }
+
     override fun findByLoginId(loginId: LoginId): UserAccount? {
         return repository.findByLoginId(loginId.value)?.toDomain()
     }
@@ -39,13 +44,14 @@ class JpaUserAccountPersistenceAdapter(
         try {
             return repository.saveAndFlush(UserAccountJpaEntity.from(userAccount)).toDomain()
         } catch (_: DataIntegrityViolationException) {
-            throw DuplicateUserAccountException(userAccount.loginId.value)
+            throw DuplicateUserAccountException("loginId or email already exists")
         }
     }
 }
 
 interface SpringDataUserAccountJpaRepository : JpaRepository<UserAccountJpaEntity, String> {
     fun existsByLoginId(loginId: String): Boolean
+    fun existsByEmail(email: String): Boolean
     fun findByLoginId(loginId: String): UserAccountJpaEntity?
 }
 
@@ -58,6 +64,12 @@ class UserAccountJpaEntity(
 
     @Column(name = "login_id", nullable = false, unique = true, length = 30)
     var loginId: String = "",
+
+    @Column(name = "email", nullable = false, unique = true, length = 254)
+    var email: String = "",
+
+    @Column(name = "email_verified", nullable = false)
+    var emailVerified: Boolean = false,
 
     @Column(name = "password_hash", nullable = false, length = 255)
     var passwordHash: String = "",
@@ -76,6 +88,8 @@ class UserAccountJpaEntity(
         return UserAccount(
             id = UserId(id),
             loginId = LoginId.from(loginId),
+            email = EmailAddress.from(email),
+            emailVerified = emailVerified,
             passwordHash = PasswordHash(passwordHash),
             nickname = Nickname.from(nickname),
             mathStatus = mathStatus,
@@ -88,6 +102,8 @@ class UserAccountJpaEntity(
             return UserAccountJpaEntity(
                 id = userAccount.id.value,
                 loginId = userAccount.loginId.value,
+                email = userAccount.email.value,
+                emailVerified = userAccount.emailVerified,
                 passwordHash = userAccount.passwordHash.value,
                 nickname = userAccount.nickname.value,
                 mathStatus = userAccount.mathStatus,

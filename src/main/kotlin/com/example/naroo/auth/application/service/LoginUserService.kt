@@ -57,6 +57,8 @@ class LoginUserService(
             user = LoggedInUser(
                 id = userAccount.id.value,
                 loginId = userAccount.loginId.value,
+                email = userAccount.email.value,
+                emailVerified = userAccount.emailVerified,
                 nickname = userAccount.nickname.value,
                 mathStatus = userAccount.mathStatus,
             ),

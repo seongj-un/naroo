@@ -1,6 +1,7 @@
 package com.example.naroo.auth.adapter.`out`.security
 
 import com.example.naroo.user.domain.LoginId
+import com.example.naroo.user.domain.EmailAddress
 import com.example.naroo.user.domain.MathStatus
 import com.example.naroo.user.domain.Nickname
 import com.example.naroo.user.domain.PasswordHash
@@ -24,6 +25,8 @@ class HmacJwtTokenIssuerAdapterTest {
         val userAccount = UserAccount(
             id = UserId("user-1"),
             loginId = LoginId.from("student01"),
+            email = EmailAddress.from("student01@example.com"),
+            emailVerified = true,
             passwordHash = PasswordHash("hashed-password"),
             nickname = Nickname.from("나루"),
             mathStatus = MathStatus.UNKNOWN,
@@ -41,6 +44,7 @@ class HmacJwtTokenIssuerAdapterTest {
         assertEquals(token.id, verifiedToken?.tokenId)
         assertEquals("user-1", verifiedToken?.userId)
         assertEquals("student01", verifiedToken?.loginId)
+        assertEquals(true, verifiedToken?.emailVerified)
         assertEquals("나루", verifiedToken?.nickname)
     }
 
@@ -54,6 +58,8 @@ class HmacJwtTokenIssuerAdapterTest {
         val userAccount = UserAccount(
             id = UserId("user-1"),
             loginId = LoginId.from("student01"),
+            email = EmailAddress.from("student01@example.com"),
+            emailVerified = false,
             passwordHash = PasswordHash("hashed-password"),
             nickname = Nickname.from("나루"),
             mathStatus = MathStatus.UNKNOWN,

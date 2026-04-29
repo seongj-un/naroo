@@ -24,6 +24,8 @@ data class LoggedInUserResult(
 data class LoggedInUser(
     val id: String,
     val loginId: String,
+    val email: String,
+    val emailVerified: Boolean,
     val nickname: String,
     val mathStatus: MathStatus,
 )

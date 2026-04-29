@@ -31,6 +31,7 @@ class AuthController(
         val result = signUpUserUseCase.signUp(
             SignUpUserCommand(
                 loginId = request.loginId,
+                email = request.email,
                 password = request.password,
                 nickname = request.nickname,
                 mathStatus = request.mathStatus,
@@ -41,6 +42,8 @@ class AuthController(
             SignUpUserResponse(
                 id = result.id.value,
                 loginId = result.loginId,
+                email = result.email,
+                emailVerified = result.emailVerified,
                 nickname = result.nickname,
                 mathStatus = result.mathStatus,
                 createdAt = result.createdAt,
@@ -67,6 +70,8 @@ class AuthController(
                     user = LoginUserResponseUser(
                         id = result.user.id,
                         loginId = result.user.loginId,
+                        email = result.user.email,
+                        emailVerified = result.user.emailVerified,
                         nickname = result.user.nickname,
                         mathStatus = result.user.mathStatus,
                     ),
@@ -101,6 +106,7 @@ class AuthController(
             MeResponse(
                 id = authentication.userId,
                 loginId = authentication.loginId,
+                emailVerified = authentication.emailVerified,
                 nickname = authentication.nickname,
             ),
         )
@@ -123,6 +129,7 @@ class AuthController(
 
 data class SignUpUserRequest(
     val loginId: String,
+    val email: String,
     val password: String,
     val nickname: String,
     val mathStatus: MathStatus = MathStatus.UNKNOWN,
@@ -131,6 +138,8 @@ data class SignUpUserRequest(
 data class SignUpUserResponse(
     val id: String,
     val loginId: String,
+    val email: String,
+    val emailVerified: Boolean,
     val nickname: String,
     val mathStatus: MathStatus,
     val createdAt: Instant,
@@ -157,6 +166,8 @@ data class ReissueTokenResponse(
 data class LoginUserResponseUser(
     val id: String,
     val loginId: String,
+    val email: String,
+    val emailVerified: Boolean,
     val nickname: String,
     val mathStatus: MathStatus,
 )
@@ -164,6 +175,7 @@ data class LoginUserResponseUser(
 data class MeResponse(
     val id: String,
     val loginId: String,
+    val emailVerified: Boolean,
     val nickname: String,
 )
 

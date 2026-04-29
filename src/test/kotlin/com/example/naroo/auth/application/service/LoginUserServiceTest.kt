@@ -9,6 +9,7 @@ import com.example.naroo.auth.port.`out`.RefreshTokenPort
 import com.example.naroo.auth.port.`out`.StoredAccessToken
 import com.example.naroo.auth.port.`out`.StoredRefreshToken
 import com.example.naroo.auth.port.`out`.TokenStorePort
+import com.example.naroo.user.domain.EmailAddress
 import com.example.naroo.user.domain.LoginId
 import com.example.naroo.user.domain.MathStatus
 import com.example.naroo.user.domain.Nickname
@@ -25,6 +26,8 @@ class LoginUserServiceTest {
     private val userAccount = UserAccount(
         id = UserId("user-1"),
         loginId = LoginId.from("student01"),
+        email = EmailAddress.from("student01@example.com"),
+        emailVerified = false,
         passwordHash = PasswordHash("hashed-password"),
         nickname = Nickname.from("나루"),
         mathStatus = MathStatus.BARELY_FOLLOWS,
@@ -63,6 +66,8 @@ class LoginUserServiceTest {
         assertEquals(Instant.parse("2026-05-02T00:00:00Z"), result.refreshTokenExpiresAt)
         assertEquals("user-1", result.user.id)
         assertEquals("student01", result.user.loginId)
+        assertEquals("student01@example.com", result.user.email)
+        assertEquals(false, result.user.emailVerified)
         assertEquals("나루", result.user.nickname)
         assertEquals(MathStatus.BARELY_FOLLOWS, result.user.mathStatus)
     }
@@ -157,6 +162,10 @@ private class FakeLoginUserRepository(
 ) : UserAccountRepositoryPort {
     override fun existsByLoginId(loginId: LoginId): Boolean {
         return userAccount?.loginId == loginId
+    }
+
+    override fun existsByEmail(email: EmailAddress): Boolean {
+        return userAccount?.email == email
     }
 
     override fun findByLoginId(loginId: LoginId): UserAccount? {

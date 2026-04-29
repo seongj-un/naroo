@@ -48,6 +48,7 @@ class JwtAuthenticationFilter(
                 tokenId = verifiedToken.tokenId,
                 userId = verifiedToken.userId,
                 loginId = verifiedToken.loginId,
+                emailVerified = verifiedToken.emailVerified,
                 nickname = verifiedToken.nickname,
             ),
         )

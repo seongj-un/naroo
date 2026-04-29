@@ -27,6 +27,8 @@ class AuthControllerTest {
                 SignedUpUserResult(
                     id = UserId("user-1"),
                     loginId = command.loginId,
+                    email = command.email,
+                    emailVerified = false,
                     nickname = command.nickname,
                     mathStatus = command.mathStatus,
                     createdAt = Instant.parse("2026-04-29T00:00:00Z"),
@@ -39,6 +41,7 @@ class AuthControllerTest {
         val response = controller.signUp(
             SignUpUserRequest(
                 loginId = "student01",
+                email = "student01@example.com",
                 password = "password123",
                 nickname = "나루",
                 mathStatus = MathStatus.MOSTLY_GAVE_UP,
@@ -47,7 +50,10 @@ class AuthControllerTest {
 
         assertEquals(HttpStatus.CREATED, response.statusCode)
         assertEquals("student01", capturedCommand?.loginId)
+        assertEquals("student01@example.com", capturedCommand?.email)
         assertEquals("password123", capturedCommand?.password)
+        assertEquals("student01@example.com", response.body?.email)
+        assertEquals(false, response.body?.emailVerified)
         assertEquals("나루", response.body?.nickname)
         assertEquals(MathStatus.MOSTLY_GAVE_UP, response.body?.mathStatus)
     }
@@ -68,6 +74,8 @@ class AuthControllerTest {
                     user = LoggedInUser(
                         id = "user-1",
                         loginId = command.loginId,
+                        email = "student01@example.com",
+                        emailVerified = false,
                         nickname = "나루",
                         mathStatus = MathStatus.UNKNOWN,
                     ),
@@ -89,6 +97,8 @@ class AuthControllerTest {
         assertEquals("jwt-token", response.body?.accessToken)
         assertEquals("Bearer", response.body?.tokenType)
         assertEquals("user-1", response.body?.user?.id)
+        assertEquals("student01@example.com", response.body?.user?.email)
+        assertEquals(false, response.body?.user?.emailVerified)
         assertEquals(true, response.headers["Set-Cookie"]?.single()?.contains("refresh_token=refresh-token"))
     }
 

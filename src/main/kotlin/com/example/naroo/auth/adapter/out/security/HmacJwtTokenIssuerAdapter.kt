@@ -77,6 +77,7 @@ class HmacJwtTokenIssuerAdapter(
             tokenId = payload["jti"] as? String ?: return null,
             userId = payload["sub"] as? String ?: return null,
             loginId = payload["loginId"] as? String ?: return null,
+            emailVerified = payload["emailVerified"] as? Boolean ?: return null,
             nickname = payload["nickname"] as? String ?: return null,
         )
     }
@@ -87,6 +88,7 @@ class HmacJwtTokenIssuerAdapter(
                 "jti" to tokenId,
                 "sub" to userAccount.id.value,
                 "loginId" to userAccount.loginId.value,
+                "emailVerified" to userAccount.emailVerified,
                 "nickname" to userAccount.nickname.value,
                 "iat" to issuedAt.epochSecond,
                 "exp" to expiresAt.epochSecond,

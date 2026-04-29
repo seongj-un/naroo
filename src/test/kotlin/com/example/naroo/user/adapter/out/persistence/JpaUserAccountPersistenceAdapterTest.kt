@@ -1,6 +1,7 @@
 package com.example.naroo.user.adapter.`out`.persistence
 
 import com.example.naroo.user.domain.LoginId
+import com.example.naroo.user.domain.EmailAddress
 import com.example.naroo.user.domain.MathStatus
 import com.example.naroo.user.domain.Nickname
 import com.example.naroo.user.domain.PasswordHash
@@ -33,6 +34,8 @@ class JpaUserAccountPersistenceAdapterTest(
                 create table if not exists user_accounts (
                     id varchar(36) primary key,
                     login_id varchar(30) not null unique,
+                    email varchar(254) not null unique,
+                    email_verified boolean not null,
                     password_hash varchar(255) not null,
                     nickname varchar(20) not null,
                     math_status varchar(32) not null,
@@ -51,6 +54,7 @@ class JpaUserAccountPersistenceAdapterTest(
 
         assertEquals(userAccount, saved)
         assertTrue(adapter.existsByLoginId(userAccount.loginId))
+        assertTrue(adapter.existsByEmail(userAccount.email))
         assertEquals(userAccount, adapter.findByLoginId(userAccount.loginId))
         assertEquals(userAccount, adapter.findById(userAccount.id))
     }
@@ -58,6 +62,7 @@ class JpaUserAccountPersistenceAdapterTest(
     @Test
     fun `returns null and false when user account does not exist`() {
         assertFalse(adapter.existsByLoginId(LoginId.from("missing-user")))
+        assertFalse(adapter.existsByEmail(EmailAddress.from("missing@example.com")))
         assertNull(adapter.findByLoginId(LoginId.from("missing-user")))
         assertNull(adapter.findById(UserId("missing-user-id")))
     }
@@ -76,6 +81,8 @@ class JpaUserAccountPersistenceAdapterTest(
         return UserAccount(
             id = UserId("user-1"),
             loginId = LoginId.from("student01"),
+            email = EmailAddress.from("student01@example.com"),
+            emailVerified = false,
             passwordHash = PasswordHash("hashed-password"),
             nickname = Nickname.from("나루"),
             mathStatus = MathStatus.MOSTLY_GAVE_UP,

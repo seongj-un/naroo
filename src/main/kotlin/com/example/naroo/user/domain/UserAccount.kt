@@ -5,6 +5,8 @@ import java.time.Instant
 data class UserAccount(
     val id: UserId,
     val loginId: LoginId,
+    val email: EmailAddress,
+    val emailVerified: Boolean,
     val passwordHash: PasswordHash,
     val nickname: Nickname,
     val mathStatus: MathStatus,
@@ -27,6 +29,20 @@ value class LoginId private constructor(val value: String) {
             val normalized = value.trim()
             require(pattern.matches(normalized)) { "loginId must be 4-30 letters, numbers, dots, underscores, or hyphens" }
             return LoginId(normalized)
+        }
+    }
+}
+
+@JvmInline
+value class EmailAddress private constructor(val value: String) {
+    companion object {
+        private val pattern = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
+
+        fun from(value: String): EmailAddress {
+            val normalized = value.trim().lowercase()
+            require(normalized.length <= 254) { "email must be 254 characters or fewer" }
+            require(pattern.matches(normalized)) { "email must be valid" }
+            return EmailAddress(normalized)
         }
     }
 }

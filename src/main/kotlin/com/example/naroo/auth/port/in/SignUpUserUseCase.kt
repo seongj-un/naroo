@@ -10,6 +10,7 @@ fun interface SignUpUserUseCase {
 
 data class SignUpUserCommand(
     val loginId: String,
+    val email: String,
     val password: String,
     val nickname: String,
     val mathStatus: MathStatus,
@@ -18,6 +19,8 @@ data class SignUpUserCommand(
 data class SignedUpUserResult(
     val id: UserId,
     val loginId: String,
+    val email: String,
+    val emailVerified: Boolean,
     val nickname: String,
     val mathStatus: MathStatus,
     val createdAt: Instant,

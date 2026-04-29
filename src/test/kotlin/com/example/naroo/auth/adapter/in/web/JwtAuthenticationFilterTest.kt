@@ -24,6 +24,7 @@ class JwtAuthenticationFilterTest {
                     tokenId = "token-1",
                     userId = "user-1",
                     loginId = "student01",
+                    emailVerified = false,
                     nickname = "나루",
                 )
             },
