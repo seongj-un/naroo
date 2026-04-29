@@ -1,7 +1,15 @@
 package com.example.naroo.auth.application.service
 
 import com.example.naroo.auth.port.`in`.SignUpUserCommand
+import com.example.naroo.auth.port.`out`.EmailSenderPort
+import com.example.naroo.auth.port.`out`.EmailVerificationMessage
+import com.example.naroo.auth.port.`out`.EmailVerificationTokenPort
+import com.example.naroo.auth.port.`out`.IssuedEmailVerificationToken
 import com.example.naroo.auth.port.`out`.PasswordHasherPort
+import com.example.naroo.auth.port.`out`.StoredAccessToken
+import com.example.naroo.auth.port.`out`.StoredEmailVerificationToken
+import com.example.naroo.auth.port.`out`.StoredRefreshToken
+import com.example.naroo.auth.port.`out`.TokenStorePort
 import com.example.naroo.user.domain.EmailAddress
 import com.example.naroo.user.domain.LoginId
 import com.example.naroo.user.domain.MathStatus
@@ -19,10 +27,15 @@ import java.time.ZoneOffset
 
 class SignUpUserServiceTest {
     private val repository = FakeUserAccountRepository()
+    private val tokenStore = CapturingSignUpTokenStore()
+    private val emailSender = CapturingEmailSender()
     private val service = SignUpUserService(
         userAccountRepositoryPort = repository,
         passwordHasherPort = PasswordHasherPort { PasswordHash("hashed:${it.length}") },
         userIdGeneratorPort = UserIdGeneratorPort { UserId("user-1") },
+        emailVerificationTokenPort = FakeEmailVerificationTokenPort(),
+        tokenStorePort = tokenStore,
+        emailSenderPort = emailSender,
         clock = Clock.fixed(Instant.parse("2026-04-29T00:00:00Z"), ZoneOffset.UTC),
     )
 
@@ -46,6 +59,10 @@ class SignUpUserServiceTest {
         assertEquals(MathStatus.MOSTLY_GAVE_UP, result.mathStatus)
         assertEquals(Instant.parse("2026-04-29T00:00:00Z"), result.createdAt)
         assertEquals("hashed:11", repository.saved.single().passwordHash.value)
+        assertEquals("email-token-1", tokenStore.emailVerificationTokens.single().tokenId)
+        assertEquals("user-1", tokenStore.emailVerificationTokens.single().userId)
+        assertEquals("student01@example.com", emailSender.messages.single().email)
+        assertEquals("email-token-1.secret", emailSender.messages.single().token)
     }
 
     @Test
@@ -78,6 +95,57 @@ class SignUpUserServiceTest {
                 ),
             )
         }
+    }
+}
+
+private class FakeEmailVerificationTokenPort : EmailVerificationTokenPort {
+    override fun issue(userId: String, email: String): IssuedEmailVerificationToken {
+        return IssuedEmailVerificationToken(
+            id = "email-token-1",
+            value = "email-token-1.secret",
+            tokenHash = "email-token-hash",
+            expiresAt = Instant.parse("2026-04-29T00:30:00Z"),
+        )
+    }
+
+    override fun hash(rawToken: String): String {
+        return "email-token-hash"
+    }
+}
+
+private class CapturingSignUpTokenStore : TokenStorePort {
+    val emailVerificationTokens = mutableListOf<StoredEmailVerificationToken>()
+
+    override fun saveAccessToken(token: StoredAccessToken) {
+        error("access token should not be stored")
+    }
+
+    override fun findUserIdByAccessTokenId(tokenId: String): String? {
+        error("access token should not be read")
+    }
+
+    override fun saveRefreshToken(token: StoredRefreshToken) {
+        error("refresh token should not be stored")
+    }
+
+    override fun consumeRefreshToken(tokenId: String): StoredRefreshToken? {
+        error("refresh token should not be consumed")
+    }
+
+    override fun saveEmailVerificationToken(token: StoredEmailVerificationToken) {
+        emailVerificationTokens += token
+    }
+
+    override fun consumeEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
+        error("email verification token should not be consumed")
+    }
+}
+
+private class CapturingEmailSender : EmailSenderPort {
+    val messages = mutableListOf<EmailVerificationMessage>()
+
+    override fun sendEmailVerification(message: EmailVerificationMessage) {
+        messages += message
     }
 }
 

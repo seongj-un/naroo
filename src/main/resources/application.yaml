@@ -17,6 +17,8 @@ spring:
     open-in-view: false
 
 naroo:
+  auth:
+    email-verification-token-ttl-minutes: ${NAROO_AUTH_EMAIL_VERIFICATION_TOKEN_TTL_MINUTES:30}
   jwt:
     secret: ${NAROO_JWT_SECRET:naroo-local-development-secret-32bytes}
     access-token-ttl-minutes: ${NAROO_JWT_ACCESS_TOKEN_TTL_MINUTES:60}

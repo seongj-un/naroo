@@ -6,6 +6,7 @@ import com.example.naroo.auth.port.`out`.IssuedRefreshToken
 import com.example.naroo.auth.port.`out`.JwtTokenIssuerPort
 import com.example.naroo.auth.port.`out`.RefreshTokenPort
 import com.example.naroo.auth.port.`out`.StoredAccessToken
+import com.example.naroo.auth.port.`out`.StoredEmailVerificationToken
 import com.example.naroo.auth.port.`out`.StoredRefreshToken
 import com.example.naroo.auth.port.`out`.TokenStorePort
 import com.example.naroo.user.domain.EmailAddress
@@ -138,6 +139,14 @@ private class CapturingReissueTokenStore(
 
     override fun consumeRefreshToken(tokenId: String): StoredRefreshToken? {
         return refreshTokensById.remove(tokenId)
+    }
+
+    override fun saveEmailVerificationToken(token: StoredEmailVerificationToken) {
+        error("email verification token should not be stored")
+    }
+
+    override fun consumeEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
+        error("email verification token should not be consumed")
     }
 }
 

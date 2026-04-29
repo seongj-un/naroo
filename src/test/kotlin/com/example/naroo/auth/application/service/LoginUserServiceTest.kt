@@ -7,6 +7,7 @@ import com.example.naroo.auth.port.`out`.PasswordVerifierPort
 import com.example.naroo.auth.port.`out`.IssuedRefreshToken
 import com.example.naroo.auth.port.`out`.RefreshTokenPort
 import com.example.naroo.auth.port.`out`.StoredAccessToken
+import com.example.naroo.auth.port.`out`.StoredEmailVerificationToken
 import com.example.naroo.auth.port.`out`.StoredRefreshToken
 import com.example.naroo.auth.port.`out`.TokenStorePort
 import com.example.naroo.user.domain.EmailAddress
@@ -122,6 +123,14 @@ private class CapturingTokenStore : TokenStorePort {
     override fun consumeRefreshToken(tokenId: String): StoredRefreshToken? {
         return refreshTokens.removeAt(refreshTokens.indexOfFirst { it.tokenId == tokenId })
     }
+
+    override fun saveEmailVerificationToken(token: StoredEmailVerificationToken) {
+        error("email verification token should not be stored")
+    }
+
+    override fun consumeEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
+        error("email verification token should not be consumed")
+    }
 }
 
 private class RejectingTokenStore : TokenStorePort {
@@ -139,6 +148,14 @@ private class RejectingTokenStore : TokenStorePort {
 
     override fun consumeRefreshToken(tokenId: String): StoredRefreshToken? {
         error("refresh token should not be consumed")
+    }
+
+    override fun saveEmailVerificationToken(token: StoredEmailVerificationToken) {
+        error("email verification token should not be stored")
+    }
+
+    override fun consumeEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
+        error("email verification token should not be consumed")
     }
 }
 

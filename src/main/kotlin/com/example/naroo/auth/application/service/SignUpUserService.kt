@@ -3,7 +3,12 @@ package com.example.naroo.auth.application.service
 import com.example.naroo.auth.port.`in`.SignUpUserCommand
 import com.example.naroo.auth.port.`in`.SignUpUserUseCase
 import com.example.naroo.auth.port.`in`.SignedUpUserResult
+import com.example.naroo.auth.port.`out`.EmailSenderPort
+import com.example.naroo.auth.port.`out`.EmailVerificationMessage
+import com.example.naroo.auth.port.`out`.EmailVerificationTokenPort
 import com.example.naroo.auth.port.`out`.PasswordHasherPort
+import com.example.naroo.auth.port.`out`.StoredEmailVerificationToken
+import com.example.naroo.auth.port.`out`.TokenStorePort
 import com.example.naroo.user.domain.EmailAddress
 import com.example.naroo.user.domain.LoginId
 import com.example.naroo.user.domain.Nickname
@@ -20,6 +25,9 @@ class SignUpUserService(
     private val userAccountRepositoryPort: UserAccountRepositoryPort,
     private val passwordHasherPort: PasswordHasherPort,
     private val userIdGeneratorPort: UserIdGeneratorPort,
+    private val emailVerificationTokenPort: EmailVerificationTokenPort,
+    private val tokenStorePort: TokenStorePort,
+    private val emailSenderPort: EmailSenderPort,
     private val clock: Clock = Clock.systemUTC(),
 ) : SignUpUserUseCase {
     override fun signUp(command: SignUpUserCommand): SignedUpUserResult {
@@ -54,6 +62,25 @@ class SignUpUserService(
             }
             throw DuplicateLoginIdException(loginId.value)
         }
+
+        val verificationToken = emailVerificationTokenPort.issue(saved.id.value, saved.email.value)
+        tokenStorePort.saveEmailVerificationToken(
+            StoredEmailVerificationToken(
+                tokenId = verificationToken.id,
+                userId = saved.id.value,
+                email = saved.email.value,
+                tokenHash = verificationToken.tokenHash,
+                expiresAt = verificationToken.expiresAt,
+            ),
+        )
+        emailSenderPort.sendEmailVerification(
+            EmailVerificationMessage(
+                userId = saved.id.value,
+                email = saved.email.value,
+                token = verificationToken.value,
+            ),
+        )
+
         return SignedUpUserResult(
             id = saved.id,
             loginId = saved.loginId.value,

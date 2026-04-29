@@ -10,6 +10,9 @@ import com.example.naroo.auth.port.`in`.ReissuedTokenResult
 import com.example.naroo.auth.port.`in`.SignedUpUserResult
 import com.example.naroo.auth.port.`in`.SignUpUserCommand
 import com.example.naroo.auth.port.`in`.SignUpUserUseCase
+import com.example.naroo.auth.port.`in`.VerifiedEmailResult
+import com.example.naroo.auth.port.`in`.VerifyEmailCommand
+import com.example.naroo.auth.port.`in`.VerifyEmailUseCase
 import com.example.naroo.user.domain.MathStatus
 import com.example.naroo.user.domain.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -36,6 +39,7 @@ class AuthControllerTest {
             },
             LoginUserUseCase { error("login should not be called") },
             ReissueTokenUseCase { error("reissue should not be called") },
+            VerifyEmailUseCase { error("verify email should not be called") },
         )
 
         val response = controller.signUp(
@@ -82,6 +86,7 @@ class AuthControllerTest {
                 )
             },
             ReissueTokenUseCase { error("reissue should not be called") },
+            VerifyEmailUseCase { error("verify email should not be called") },
         )
 
         val response = controller.login(
@@ -118,6 +123,7 @@ class AuthControllerTest {
                     refreshTokenExpiresAt = Instant.parse("2026-05-02T00:00:00Z"),
                 )
             },
+            VerifyEmailUseCase { error("verify email should not be called") },
         )
 
         val response = controller.reissue("refresh-token")
@@ -127,5 +133,31 @@ class AuthControllerTest {
         assertEquals("new-jwt-token", response.body?.accessToken)
         assertEquals("Bearer", response.body?.tokenType)
         assertEquals(true, response.headers["Set-Cookie"]?.single()?.contains("refresh_token=new-refresh-token"))
+    }
+
+    @Test
+    fun `verify email returns verified email response`() {
+        var capturedCommand: VerifyEmailCommand? = null
+        val controller = AuthController(
+            SignUpUserUseCase { error("sign-up should not be called") },
+            LoginUserUseCase { error("login should not be called") },
+            ReissueTokenUseCase { error("reissue should not be called") },
+            VerifyEmailUseCase { command ->
+                capturedCommand = command
+                VerifiedEmailResult(
+                    userId = "user-1",
+                    email = "student01@example.com",
+                    emailVerified = true,
+                )
+            },
+        )
+
+        val response = controller.verifyEmail(VerifyEmailRequest(token = "email-token"))
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals("email-token", capturedCommand?.token)
+        assertEquals("user-1", response.body?.userId)
+        assertEquals("student01@example.com", response.body?.email)
+        assertEquals(true, response.body?.emailVerified)
     }
 }

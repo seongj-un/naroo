@@ -1,6 +1,7 @@
 package com.example.naroo.auth.adapter.`out`.token
 
 import com.example.naroo.auth.port.`out`.StoredAccessToken
+import com.example.naroo.auth.port.`out`.StoredEmailVerificationToken
 import com.example.naroo.auth.port.`out`.StoredRefreshToken
 import com.example.naroo.auth.port.`out`.TokenStorePort
 import org.springframework.data.redis.core.StringRedisTemplate
@@ -60,11 +61,45 @@ class RedisTokenStoreAdapter(
         )
     }
 
+    override fun saveEmailVerificationToken(token: StoredEmailVerificationToken) {
+        val ttl = Duration.between(clock.instant(), token.expiresAt)
+        if (ttl.isNegative || ttl.isZero) {
+            return
+        }
+
+        redisTemplate.opsForValue().set(
+            emailVerificationTokenKey(token.tokenId),
+            listOf(token.userId, token.email, token.tokenHash).joinToString("\n"),
+            ttl,
+        )
+    }
+
+    override fun consumeEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
+        val key = emailVerificationTokenKey(tokenId)
+        val storedValue = redisTemplate.opsForValue().getAndDelete(key) ?: return null
+        val parts = storedValue.split("\n")
+        if (parts.size != 3 || parts.any { it.isBlank() }) {
+            return null
+        }
+
+        return StoredEmailVerificationToken(
+            tokenId = tokenId,
+            userId = parts[0],
+            email = parts[1],
+            tokenHash = parts[2],
+            expiresAt = clock.instant(),
+        )
+    }
+
     private fun accessTokenKey(tokenId: String): String {
         return "auth:access-token:$tokenId"
     }
 
     private fun refreshTokenKey(tokenId: String): String {
         return "auth:refresh-token:$tokenId"
+    }
+
+    private fun emailVerificationTokenKey(tokenId: String): String {
+        return "auth:email-verification-token:$tokenId"
     }
 }

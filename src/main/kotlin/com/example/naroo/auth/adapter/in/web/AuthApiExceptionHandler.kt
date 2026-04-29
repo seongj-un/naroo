@@ -1,6 +1,8 @@
 package com.example.naroo.auth.adapter.`in`.web
 
 import com.example.naroo.auth.application.service.DuplicateLoginIdException
+import com.example.naroo.auth.application.service.DuplicateEmailException
+import com.example.naroo.auth.application.service.InvalidEmailVerificationTokenException
 import com.example.naroo.auth.application.service.InvalidLoginCredentialsException
 import com.example.naroo.auth.application.service.InvalidRefreshTokenException
 import org.springframework.http.HttpStatus
@@ -24,6 +26,13 @@ class AuthApiExceptionHandler {
         )
     }
 
+    @ExceptionHandler(DuplicateEmailException::class)
+    fun handleDuplicateEmail(exception: DuplicateEmailException): ResponseEntity<AuthApiErrorResponse> {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+            AuthApiErrorResponse(message = exception.message ?: "email already exists"),
+        )
+    }
+
     @ExceptionHandler(InvalidLoginCredentialsException::class)
     fun handleInvalidLoginCredentials(exception: InvalidLoginCredentialsException): ResponseEntity<AuthApiErrorResponse> {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
@@ -35,6 +44,15 @@ class AuthApiExceptionHandler {
     fun handleInvalidRefreshToken(exception: RuntimeException): ResponseEntity<AuthApiErrorResponse> {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
             AuthApiErrorResponse(message = exception.message ?: "invalid refresh token"),
+        )
+    }
+
+    @ExceptionHandler(InvalidEmailVerificationTokenException::class)
+    fun handleInvalidEmailVerificationToken(
+        exception: InvalidEmailVerificationTokenException,
+    ): ResponseEntity<AuthApiErrorResponse> {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            AuthApiErrorResponse(message = exception.message ?: "invalid email verification token"),
         )
     }
 }

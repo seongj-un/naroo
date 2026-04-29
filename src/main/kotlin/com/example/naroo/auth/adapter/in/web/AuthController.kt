@@ -6,6 +6,8 @@ import com.example.naroo.auth.port.`in`.ReissueTokenCommand
 import com.example.naroo.auth.port.`in`.ReissueTokenUseCase
 import com.example.naroo.auth.port.`in`.SignUpUserCommand
 import com.example.naroo.auth.port.`in`.SignUpUserUseCase
+import com.example.naroo.auth.port.`in`.VerifyEmailCommand
+import com.example.naroo.auth.port.`in`.VerifyEmailUseCase
 import com.example.naroo.user.domain.MathStatus
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
@@ -25,6 +27,7 @@ class AuthController(
     private val signUpUserUseCase: SignUpUserUseCase,
     private val loginUserUseCase: LoginUserUseCase,
     private val reissueTokenUseCase: ReissueTokenUseCase,
+    private val verifyEmailUseCase: VerifyEmailUseCase,
 ) {
     @PostMapping("/sign-up")
     fun signUp(@RequestBody request: SignUpUserRequest): ResponseEntity<SignUpUserResponse> {
@@ -99,6 +102,18 @@ class AuthController(
             )
     }
 
+    @PostMapping("/email/verify")
+    fun verifyEmail(@RequestBody request: VerifyEmailRequest): ResponseEntity<VerifyEmailResponse> {
+        val result = verifyEmailUseCase.verify(VerifyEmailCommand(token = request.token))
+        return ResponseEntity.ok(
+            VerifyEmailResponse(
+                userId = result.userId,
+                email = result.email,
+                emailVerified = result.emailVerified,
+            ),
+        )
+    }
+
     @GetMapping("/me")
     fun me(request: HttpServletRequest): ResponseEntity<MeResponse> {
         val authentication = request.getAttribute(JwtAuthentication.REQUEST_ATTRIBUTE) as JwtAuthentication
@@ -161,6 +176,16 @@ data class ReissueTokenResponse(
     val accessToken: String,
     val tokenType: String,
     val expiresAt: Instant,
+)
+
+data class VerifyEmailRequest(
+    val token: String,
+)
+
+data class VerifyEmailResponse(
+    val userId: String,
+    val email: String,
+    val emailVerified: Boolean,
 )
 
 data class LoginUserResponseUser(
