@@ -25,5 +25,8 @@ object DiagnosticExceptionMapper {
 
             is DiagnosticException.DiagnosticAlreadyCompleted ->
                 ResponseEntity.status(HttpStatus.CONFLICT).body(DiagnosticErrorCode.DIAGNOSTIC_ALREADY_COMPLETED.toWrappedDto())
+
+            is DiagnosticException.DiagnosticResultNotReady ->
+                ResponseEntity.status(HttpStatus.CONFLICT).body(DiagnosticErrorCode.DIAGNOSTIC_RESULT_NOT_READY.toWrappedDto())
         }
 }

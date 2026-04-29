@@ -11,8 +11,12 @@ import com.example.naroo.diagnostic.port.`in`.CreatedDiagnosticSessionResult
 import com.example.naroo.diagnostic.port.`in`.DiagnosticQuestionChoiceResult
 import com.example.naroo.diagnostic.port.`in`.DiagnosticQuestionResult
 import com.example.naroo.diagnostic.port.`in`.DiagnosticQuestionsResult
+import com.example.naroo.diagnostic.port.`in`.DiagnosticResultView
+import com.example.naroo.diagnostic.port.`in`.GetDiagnosticResultCommand
+import com.example.naroo.diagnostic.port.`in`.GetDiagnosticResultUseCase
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsCommand
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsUseCase
+import com.example.naroo.diagnostic.port.`in`.NextMissionPreviewResult
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointCommand
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointUseCase
 import com.example.naroo.diagnostic.port.`in`.SelectedStartingPointResult
@@ -61,6 +65,7 @@ class DiagnosticControllerTest {
                 )
             },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
+            GetDiagnosticResultUseCase { error("get result should not be called") },
         )
 
         authenticate(emailVerified = true)
@@ -82,6 +87,7 @@ class DiagnosticControllerTest {
             CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
+            GetDiagnosticResultUseCase { error("get result should not be called") },
         )
 
         authenticate(emailVerified = false)
@@ -109,6 +115,7 @@ class DiagnosticControllerTest {
             },
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
+            GetDiagnosticResultUseCase { error("get result should not be called") },
         )
 
         authenticate(emailVerified = true)
@@ -129,6 +136,7 @@ class DiagnosticControllerTest {
             CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
+            GetDiagnosticResultUseCase { error("get result should not be called") },
         )
 
         authenticate(emailVerified = false)
@@ -156,6 +164,7 @@ class DiagnosticControllerTest {
             CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
+            GetDiagnosticResultUseCase { error("get result should not be called") },
         )
         authenticate(emailVerified = true)
 
@@ -181,6 +190,7 @@ class DiagnosticControllerTest {
             CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
+            GetDiagnosticResultUseCase { error("get result should not be called") },
         )
 
         authenticate(emailVerified = false)
@@ -217,6 +227,7 @@ class DiagnosticControllerTest {
                     summary = "전체가 무너진 게 아니에요.",
                 )
             },
+            GetDiagnosticResultUseCase { error("get result should not be called") },
         )
         authenticate(emailVerified = true)
 
@@ -250,6 +261,48 @@ class DiagnosticControllerTest {
         assertEquals(1, response.body?.data?.correctCount)
         assertEquals(1, response.body?.data?.unknownCount)
         assertEquals("linear_function_slope", response.body?.data?.primaryRecoveryConcept)
+    }
+
+    @Test
+    fun `get result returns diagnostic result with next mission preview`() {
+        var capturedCommand: GetDiagnosticResultCommand? = null
+        val controller = DiagnosticController(
+            SelectStartingPointUseCase { error("select starting point should not be called") },
+            CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
+            GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
+            SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
+            GetDiagnosticResultUseCase { command ->
+                capturedCommand = command
+                DiagnosticResultView(
+                    diagnosticSessionId = command.diagnosticSessionId,
+                    mathArea = MathArea.FUNCTION,
+                    status = DiagnosticSessionStatus.COMPLETED,
+                    totalQuestionCount = 2,
+                    correctCount = 1,
+                    wrongCount = 0,
+                    unknownCount = 1,
+                    weakLinks = listOf("linear_function_slope"),
+                    primaryRecoveryConcept = "linear_function_slope",
+                    summary = "전체가 무너진 게 아니에요.",
+                    nextMissionPreview = NextMissionPreviewResult(
+                        conceptTag = "linear_function_slope",
+                        title = "linear_function_slope 10분 복구 미션",
+                        estimatedMinutes = 10,
+                        tone = "힌트부터 천천히 시작해요.",
+                    ),
+                )
+            },
+        )
+        authenticate(emailVerified = true)
+
+        val response = controller.getResult(diagnosticSessionId = "diagnostic-session-1")
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals("user-1", capturedCommand?.userId)
+        assertEquals("diagnostic-session-1", capturedCommand?.diagnosticSessionId)
+        assertEquals(DiagnosticSessionStatus.COMPLETED, response.body?.data?.status)
+        assertEquals("linear_function_slope", response.body?.data?.primaryRecoveryConcept)
+        assertEquals(10, response.body?.data?.nextMissionPreview?.estimatedMinutes)
     }
 
     private fun authenticate(emailVerified: Boolean) {
