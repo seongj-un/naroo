@@ -7,6 +7,7 @@ import com.example.naroo.auth.port.`out`.PasswordHasherPort
 import com.example.naroo.user.domain.LoginId
 import com.example.naroo.user.domain.Nickname
 import com.example.naroo.user.domain.UserAccount
+import com.example.naroo.user.port.`out`.DuplicateUserAccountException
 import com.example.naroo.user.port.`out`.UserAccountRepositoryPort
 import com.example.naroo.user.port.`out`.UserIdGeneratorPort
 import org.springframework.stereotype.Service
@@ -38,7 +39,11 @@ class SignUpUserService(
             createdAt = Instant.now(clock),
         )
 
-        val saved = userAccountRepositoryPort.save(userAccount)
+        val saved = try {
+            userAccountRepositoryPort.save(userAccount)
+        } catch (_: DuplicateUserAccountException) {
+            throw DuplicateLoginIdException(loginId.value)
+        }
         return SignedUpUserResult(
             id = saved.id,
             loginId = saved.loginId.value,

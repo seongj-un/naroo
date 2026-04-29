@@ -10,3 +10,5 @@ interface UserAccountRepositoryPort {
     fun findById(userId: UserId): UserAccount?
     fun save(userAccount: UserAccount): UserAccount
 }
+
+class DuplicateUserAccountException(loginId: String) : RuntimeException("loginId already exists: $loginId")

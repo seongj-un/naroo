@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:naroo-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+naroo:
+  jwt:
+    secret: naroo-test-development-secret-32bytes
+    access-token-ttl-minutes: 60
+    refresh-token-ttl-days: 3
