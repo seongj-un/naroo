@@ -1,15 +1,17 @@
-package com.example.naroo.user.application.service
+package com.example.naroo.auth.application.service
 
+import com.example.naroo.auth.port.`in`.LoginUserCommand
+import com.example.naroo.auth.port.`out`.IssuedJwtToken
+import com.example.naroo.auth.port.`out`.JwtTokenIssuerPort
+import com.example.naroo.auth.port.`out`.PasswordVerifierPort
+import com.example.naroo.auth.port.`out`.StoredToken
+import com.example.naroo.auth.port.`out`.TokenStorePort
 import com.example.naroo.user.domain.LoginId
 import com.example.naroo.user.domain.MathStatus
 import com.example.naroo.user.domain.Nickname
 import com.example.naroo.user.domain.PasswordHash
 import com.example.naroo.user.domain.UserAccount
 import com.example.naroo.user.domain.UserId
-import com.example.naroo.user.port.`in`.LoginUserCommand
-import com.example.naroo.user.port.`out`.IssuedJwtToken
-import com.example.naroo.user.port.`out`.JwtTokenIssuerPort
-import com.example.naroo.user.port.`out`.PasswordVerifierPort
 import com.example.naroo.user.port.`out`.UserAccountRepositoryPort
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -35,10 +37,12 @@ class LoginUserServiceTest {
             },
             jwtTokenIssuerPort = JwtTokenIssuerPort {
                 IssuedJwtToken(
+                    id = "token-1",
                     value = "jwt-token",
                     expiresAt = Instant.parse("2026-04-29T01:00:00Z"),
                 )
             },
+            tokenStorePort = CapturingTokenStore(),
         )
 
         val result = service.login(
@@ -63,6 +67,7 @@ class LoginUserServiceTest {
             userAccountRepositoryPort = FakeLoginUserRepository(null),
             passwordVerifierPort = PasswordVerifierPort { _, _ -> true },
             jwtTokenIssuerPort = JwtTokenIssuerPort { error("token should not be issued") },
+            tokenStorePort = TokenStorePort { error("token should not be stored") },
         )
 
         assertThrows(InvalidLoginCredentialsException::class.java) {
@@ -76,11 +81,20 @@ class LoginUserServiceTest {
             userAccountRepositoryPort = FakeLoginUserRepository(userAccount),
             passwordVerifierPort = PasswordVerifierPort { _, _ -> false },
             jwtTokenIssuerPort = JwtTokenIssuerPort { error("token should not be issued") },
+            tokenStorePort = TokenStorePort { error("token should not be stored") },
         )
 
         assertThrows(InvalidLoginCredentialsException::class.java) {
             service.login(LoginUserCommand(loginId = "student01", password = "wrong-password"))
         }
+    }
+}
+
+private class CapturingTokenStore : TokenStorePort {
+    val saved = mutableListOf<StoredToken>()
+
+    override fun save(token: StoredToken) {
+        saved += token
     }
 }
 

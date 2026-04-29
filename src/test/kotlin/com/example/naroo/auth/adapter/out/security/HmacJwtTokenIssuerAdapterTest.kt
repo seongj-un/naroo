@@ -1,4 +1,4 @@
-package com.example.naroo.user.adapter.`out`.security
+package com.example.naroo.auth.adapter.`out`.security
 
 import com.example.naroo.user.domain.LoginId
 import com.example.naroo.user.domain.MathStatus
@@ -33,6 +33,7 @@ class HmacJwtTokenIssuerAdapterTest {
         val token = issuer.issue(userAccount)
 
         assertEquals(Instant.parse("2026-04-29T00:30:00Z"), token.expiresAt)
+        assertTrue(token.id.isNotBlank())
         assertEquals(3, token.value.split(".").size)
         assertTrue(token.value.startsWith("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."))
     }

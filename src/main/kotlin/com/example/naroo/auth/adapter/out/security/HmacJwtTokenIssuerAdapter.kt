@@ -1,8 +1,8 @@
-package com.example.naroo.user.adapter.`out`.security
+package com.example.naroo.auth.adapter.`out`.security
 
 import com.example.naroo.user.domain.UserAccount
-import com.example.naroo.user.port.`out`.IssuedJwtToken
-import com.example.naroo.user.port.`out`.JwtTokenIssuerPort
+import com.example.naroo.auth.port.`out`.IssuedJwtToken
+import com.example.naroo.auth.port.`out`.JwtTokenIssuerPort
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.nio.charset.StandardCharsets
@@ -10,6 +10,7 @@ import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.Base64
+import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -28,20 +29,23 @@ class HmacJwtTokenIssuerAdapter(
 
         val issuedAt = Instant.now(clock)
         val expiresAt = issuedAt.plus(Duration.ofMinutes(accessTokenTtlMinutes))
+        val tokenId = UUID.randomUUID().toString()
         val header = """{"alg":"HS256","typ":"JWT"}"""
-        val payload = buildPayload(userAccount, issuedAt, expiresAt)
+        val payload = buildPayload(userAccount, tokenId, issuedAt, expiresAt)
         val unsignedToken = "${base64Url(header)}.${base64Url(payload)}"
         val signature = sign(unsignedToken)
 
         return IssuedJwtToken(
+            id = tokenId,
             value = "$unsignedToken.$signature",
             expiresAt = expiresAt,
         )
     }
 
-    private fun buildPayload(userAccount: UserAccount, issuedAt: Instant, expiresAt: Instant): String {
+    private fun buildPayload(userAccount: UserAccount, tokenId: String, issuedAt: Instant, expiresAt: Instant): String {
         return """
             {
+              "jti":"${jsonEscape(tokenId)}",
               "sub":"${jsonEscape(userAccount.id.value)}",
               "loginId":"${jsonEscape(userAccount.loginId.value)}",
               "nickname":"${jsonEscape(userAccount.nickname.value)}",

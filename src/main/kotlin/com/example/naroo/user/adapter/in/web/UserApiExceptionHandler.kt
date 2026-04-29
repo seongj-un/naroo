@@ -1,7 +1,6 @@
 package com.example.naroo.user.adapter.`in`.web
 
 import com.example.naroo.user.application.service.DuplicateLoginIdException
-import com.example.naroo.user.application.service.InvalidLoginCredentialsException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -23,12 +22,6 @@ class UserApiExceptionHandler {
         )
     }
 
-    @ExceptionHandler(InvalidLoginCredentialsException::class)
-    fun handleInvalidLoginCredentials(exception: InvalidLoginCredentialsException): ResponseEntity<ApiErrorResponse> {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-            ApiErrorResponse(message = exception.message ?: "invalid login credentials"),
-        )
-    }
 }
 
 data class ApiErrorResponse(
