@@ -3,12 +3,21 @@ package com.example.naroo.auth.port.`out`
 import java.time.Instant
 
 interface TokenStorePort {
-    fun save(token: StoredToken)
-    fun findUserIdByTokenId(tokenId: String): String?
+    fun saveAccessToken(token: StoredAccessToken)
+    fun findUserIdByAccessTokenId(tokenId: String): String?
+    fun saveRefreshToken(token: StoredRefreshToken)
+    fun consumeRefreshToken(tokenId: String): StoredRefreshToken?
 }
 
-data class StoredToken(
+data class StoredAccessToken(
     val tokenId: String,
     val userId: String,
+    val expiresAt: Instant,
+)
+
+data class StoredRefreshToken(
+    val tokenId: String,
+    val userId: String,
+    val tokenHash: String,
     val expiresAt: Instant,
 )

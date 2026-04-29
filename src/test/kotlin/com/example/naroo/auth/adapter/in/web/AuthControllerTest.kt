@@ -4,6 +4,9 @@ import com.example.naroo.auth.port.`in`.LoggedInUser
 import com.example.naroo.auth.port.`in`.LoggedInUserResult
 import com.example.naroo.auth.port.`in`.LoginUserCommand
 import com.example.naroo.auth.port.`in`.LoginUserUseCase
+import com.example.naroo.auth.port.`in`.ReissueTokenCommand
+import com.example.naroo.auth.port.`in`.ReissueTokenUseCase
+import com.example.naroo.auth.port.`in`.ReissuedTokenResult
 import com.example.naroo.auth.port.`in`.SignedUpUserResult
 import com.example.naroo.auth.port.`in`.SignUpUserCommand
 import com.example.naroo.auth.port.`in`.SignUpUserUseCase
@@ -30,6 +33,7 @@ class AuthControllerTest {
                 )
             },
             LoginUserUseCase { error("login should not be called") },
+            ReissueTokenUseCase { error("reissue should not be called") },
         )
 
         val response = controller.signUp(
@@ -59,6 +63,8 @@ class AuthControllerTest {
                     accessToken = "jwt-token",
                     tokenType = "Bearer",
                     expiresAt = Instant.parse("2026-04-29T01:00:00Z"),
+                    refreshToken = "refresh-token",
+                    refreshTokenExpiresAt = Instant.parse("2026-05-02T00:00:00Z"),
                     user = LoggedInUser(
                         id = "user-1",
                         loginId = command.loginId,
@@ -67,6 +73,7 @@ class AuthControllerTest {
                     ),
                 )
             },
+            ReissueTokenUseCase { error("reissue should not be called") },
         )
 
         val response = controller.login(
@@ -82,5 +89,33 @@ class AuthControllerTest {
         assertEquals("jwt-token", response.body?.accessToken)
         assertEquals("Bearer", response.body?.tokenType)
         assertEquals("user-1", response.body?.user?.id)
+        assertEquals(true, response.headers["Set-Cookie"]?.single()?.contains("refresh_token=refresh-token"))
+    }
+
+    @Test
+    fun `reissue consumes refresh token and returns new access token response`() {
+        var capturedCommand: ReissueTokenCommand? = null
+        val controller = AuthController(
+            SignUpUserUseCase { error("sign-up should not be called") },
+            LoginUserUseCase { error("login should not be called") },
+            ReissueTokenUseCase { command ->
+                capturedCommand = command
+                ReissuedTokenResult(
+                    accessToken = "new-jwt-token",
+                    tokenType = "Bearer",
+                    expiresAt = Instant.parse("2026-04-29T01:00:00Z"),
+                    refreshToken = "new-refresh-token",
+                    refreshTokenExpiresAt = Instant.parse("2026-05-02T00:00:00Z"),
+                )
+            },
+        )
+
+        val response = controller.reissue("refresh-token")
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals("refresh-token", capturedCommand?.refreshToken)
+        assertEquals("new-jwt-token", response.body?.accessToken)
+        assertEquals("Bearer", response.body?.tokenType)
+        assertEquals(true, response.headers["Set-Cookie"]?.single()?.contains("refresh_token=new-refresh-token"))
     }
 }

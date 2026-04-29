@@ -16,6 +16,8 @@ data class LoggedInUserResult(
     val accessToken: String,
     val tokenType: String,
     val expiresAt: Instant,
+    val refreshToken: String,
+    val refreshTokenExpiresAt: Instant,
     val user: LoggedInUser,
 )
 

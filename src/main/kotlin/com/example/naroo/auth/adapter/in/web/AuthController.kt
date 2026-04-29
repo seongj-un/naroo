@@ -2,13 +2,17 @@ package com.example.naroo.auth.adapter.`in`.web
 
 import com.example.naroo.auth.port.`in`.LoginUserCommand
 import com.example.naroo.auth.port.`in`.LoginUserUseCase
+import com.example.naroo.auth.port.`in`.ReissueTokenCommand
+import com.example.naroo.auth.port.`in`.ReissueTokenUseCase
 import com.example.naroo.auth.port.`in`.SignUpUserCommand
 import com.example.naroo.auth.port.`in`.SignUpUserUseCase
 import com.example.naroo.user.domain.MathStatus
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -20,6 +24,7 @@ import java.time.Instant
 class AuthController(
     private val signUpUserUseCase: SignUpUserUseCase,
     private val loginUserUseCase: LoginUserUseCase,
+    private val reissueTokenUseCase: ReissueTokenUseCase,
 ) {
     @PostMapping("/sign-up")
     fun signUp(@RequestBody request: SignUpUserRequest): ResponseEntity<SignUpUserResponse> {
@@ -52,19 +57,41 @@ class AuthController(
             ),
         )
 
-        return ResponseEntity.ok(
-            LoginUserResponse(
-                accessToken = result.accessToken,
-                tokenType = result.tokenType,
-                expiresAt = result.expiresAt,
-                user = LoginUserResponseUser(
-                    id = result.user.id,
-                    loginId = result.user.loginId,
-                    nickname = result.user.nickname,
-                    mathStatus = result.user.mathStatus,
+        return ResponseEntity.ok()
+            .header("Set-Cookie", refreshTokenCookie(result.refreshToken, result.refreshTokenExpiresAt).toString())
+            .body(
+                LoginUserResponse(
+                    accessToken = result.accessToken,
+                    tokenType = result.tokenType,
+                    expiresAt = result.expiresAt,
+                    user = LoginUserResponseUser(
+                        id = result.user.id,
+                        loginId = result.user.loginId,
+                        nickname = result.user.nickname,
+                        mathStatus = result.user.mathStatus,
+                    ),
                 ),
-            ),
-        )
+            )
+    }
+
+    @PostMapping("/reissue")
+    fun reissue(
+        @CookieValue(name = REFRESH_TOKEN_COOKIE, required = false) refreshToken: String?,
+    ): ResponseEntity<ReissueTokenResponse> {
+        if (refreshToken.isNullOrBlank()) {
+            throw InvalidRefreshTokenRequestException()
+        }
+
+        val result = reissueTokenUseCase.reissue(ReissueTokenCommand(refreshToken = refreshToken))
+        return ResponseEntity.ok()
+            .header("Set-Cookie", refreshTokenCookie(result.refreshToken, result.refreshTokenExpiresAt).toString())
+            .body(
+                ReissueTokenResponse(
+                    accessToken = result.accessToken,
+                    tokenType = result.tokenType,
+                    expiresAt = result.expiresAt,
+                ),
+            )
     }
 
     @GetMapping("/me")
@@ -77,6 +104,20 @@ class AuthController(
                 nickname = authentication.nickname,
             ),
         )
+    }
+
+    private fun refreshTokenCookie(refreshToken: String, expiresAt: Instant): ResponseCookie {
+        return ResponseCookie.from(REFRESH_TOKEN_COOKIE, refreshToken)
+            .httpOnly(true)
+            .secure(true)
+            .sameSite("Strict")
+            .path("/api/auth")
+            .maxAge(java.time.Duration.between(Instant.now(), expiresAt).coerceAtLeast(java.time.Duration.ZERO))
+            .build()
+    }
+
+    companion object {
+        const val REFRESH_TOKEN_COOKIE = "refresh_token"
     }
 }
 
@@ -107,6 +148,12 @@ data class LoginUserResponse(
     val user: LoginUserResponseUser,
 )
 
+data class ReissueTokenResponse(
+    val accessToken: String,
+    val tokenType: String,
+    val expiresAt: Instant,
+)
+
 data class LoginUserResponseUser(
     val id: String,
     val loginId: String,
@@ -119,3 +166,5 @@ data class MeResponse(
     val loginId: String,
     val nickname: String,
 )
+
+class InvalidRefreshTokenRequestException : RuntimeException("refresh token is required")

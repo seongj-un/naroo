@@ -2,6 +2,7 @@ package com.example.naroo.auth.adapter.`in`.web
 
 import com.example.naroo.auth.application.service.DuplicateLoginIdException
 import com.example.naroo.auth.application.service.InvalidLoginCredentialsException
+import com.example.naroo.auth.application.service.InvalidRefreshTokenException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -27,6 +28,13 @@ class AuthApiExceptionHandler {
     fun handleInvalidLoginCredentials(exception: InvalidLoginCredentialsException): ResponseEntity<AuthApiErrorResponse> {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
             AuthApiErrorResponse(message = exception.message ?: "invalid login credentials"),
+        )
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException::class, InvalidRefreshTokenRequestException::class)
+    fun handleInvalidRefreshToken(exception: RuntimeException): ResponseEntity<AuthApiErrorResponse> {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            AuthApiErrorResponse(message = exception.message ?: "invalid refresh token"),
         )
     }
 }

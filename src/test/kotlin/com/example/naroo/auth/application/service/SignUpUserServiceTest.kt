@@ -86,6 +86,10 @@ private class FakeUserAccountRepository : UserAccountRepositoryPort {
         return saved.firstOrNull { it.loginId == loginId }
     }
 
+    override fun findById(userId: UserId): UserAccount? {
+        return saved.firstOrNull { it.id == userId }
+    }
+
     override fun save(userAccount: UserAccount): UserAccount {
         saved += userAccount
         return userAccount

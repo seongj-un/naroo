@@ -36,7 +36,7 @@ class JwtAuthenticationFilter(
             return
         }
 
-        val storedUserId = tokenStorePort.findUserIdByTokenId(verifiedToken.tokenId)
+        val storedUserId = tokenStorePort.findUserIdByAccessTokenId(verifiedToken.tokenId)
         if (storedUserId != verifiedToken.userId) {
             reject(httpResponse)
             return

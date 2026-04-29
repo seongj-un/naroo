@@ -1,6 +1,7 @@
 package com.example.naroo.auth.adapter.`out`.token
 
-import com.example.naroo.auth.port.`out`.StoredToken
+import com.example.naroo.auth.port.`out`.StoredAccessToken
+import com.example.naroo.auth.port.`out`.StoredRefreshToken
 import com.example.naroo.auth.port.`out`.TokenStorePort
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Component
@@ -12,7 +13,7 @@ class RedisTokenStoreAdapter(
     private val redisTemplate: StringRedisTemplate,
     private val clock: Clock,
 ) : TokenStorePort {
-    override fun save(token: StoredToken) {
+    override fun saveAccessToken(token: StoredAccessToken) {
         val ttl = Duration.between(clock.instant(), token.expiresAt)
         if (ttl.isNegative || ttl.isZero) {
             return
@@ -25,11 +26,45 @@ class RedisTokenStoreAdapter(
         )
     }
 
-    override fun findUserIdByTokenId(tokenId: String): String? {
+    override fun findUserIdByAccessTokenId(tokenId: String): String? {
         return redisTemplate.opsForValue().get(accessTokenKey(tokenId))
+    }
+
+    override fun saveRefreshToken(token: StoredRefreshToken) {
+        val ttl = Duration.between(clock.instant(), token.expiresAt)
+        if (ttl.isNegative || ttl.isZero) {
+            return
+        }
+
+        redisTemplate.opsForValue().set(
+            refreshTokenKey(token.tokenId),
+            "${token.userId}:${token.tokenHash}",
+            ttl,
+        )
+    }
+
+    override fun consumeRefreshToken(tokenId: String): StoredRefreshToken? {
+        val key = refreshTokenKey(tokenId)
+        val storedValue = redisTemplate.opsForValue().getAndDelete(key) ?: return null
+
+        val separatorIndex = storedValue.indexOf(':')
+        if (separatorIndex <= 0 || separatorIndex == storedValue.lastIndex) {
+            return null
+        }
+
+        return StoredRefreshToken(
+            tokenId = tokenId,
+            userId = storedValue.substring(0, separatorIndex),
+            tokenHash = storedValue.substring(separatorIndex + 1),
+            expiresAt = clock.instant(),
+        )
     }
 
     private fun accessTokenKey(tokenId: String): String {
         return "auth:access-token:$tokenId"
+    }
+
+    private fun refreshTokenKey(tokenId: String): String {
+        return "auth:refresh-token:$tokenId"
     }
 }

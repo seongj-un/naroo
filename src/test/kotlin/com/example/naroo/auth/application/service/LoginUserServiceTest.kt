@@ -4,7 +4,10 @@ import com.example.naroo.auth.port.`in`.LoginUserCommand
 import com.example.naroo.auth.port.`out`.IssuedJwtToken
 import com.example.naroo.auth.port.`out`.JwtTokenIssuerPort
 import com.example.naroo.auth.port.`out`.PasswordVerifierPort
-import com.example.naroo.auth.port.`out`.StoredToken
+import com.example.naroo.auth.port.`out`.IssuedRefreshToken
+import com.example.naroo.auth.port.`out`.RefreshTokenPort
+import com.example.naroo.auth.port.`out`.StoredAccessToken
+import com.example.naroo.auth.port.`out`.StoredRefreshToken
 import com.example.naroo.auth.port.`out`.TokenStorePort
 import com.example.naroo.user.domain.LoginId
 import com.example.naroo.user.domain.MathStatus
@@ -42,6 +45,7 @@ class LoginUserServiceTest {
                     expiresAt = Instant.parse("2026-04-29T01:00:00Z"),
                 )
             },
+            refreshTokenPort = FakeRefreshTokenPort(),
             tokenStorePort = CapturingTokenStore(),
         )
 
@@ -55,6 +59,8 @@ class LoginUserServiceTest {
         assertEquals("jwt-token", result.accessToken)
         assertEquals("Bearer", result.tokenType)
         assertEquals(Instant.parse("2026-04-29T01:00:00Z"), result.expiresAt)
+        assertEquals("refresh-1.secret", result.refreshToken)
+        assertEquals(Instant.parse("2026-05-02T00:00:00Z"), result.refreshTokenExpiresAt)
         assertEquals("user-1", result.user.id)
         assertEquals("student01", result.user.loginId)
         assertEquals("나루", result.user.nickname)
@@ -67,6 +73,7 @@ class LoginUserServiceTest {
             userAccountRepositoryPort = FakeLoginUserRepository(null),
             passwordVerifierPort = PasswordVerifierPort { _, _ -> true },
             jwtTokenIssuerPort = JwtTokenIssuerPort { error("token should not be issued") },
+            refreshTokenPort = FakeRefreshTokenPort(),
             tokenStorePort = RejectingTokenStore(),
         )
 
@@ -81,6 +88,7 @@ class LoginUserServiceTest {
             userAccountRepositoryPort = FakeLoginUserRepository(userAccount),
             passwordVerifierPort = PasswordVerifierPort { _, _ -> false },
             jwtTokenIssuerPort = JwtTokenIssuerPort { error("token should not be issued") },
+            refreshTokenPort = FakeRefreshTokenPort(),
             tokenStorePort = RejectingTokenStore(),
         )
 
@@ -91,24 +99,56 @@ class LoginUserServiceTest {
 }
 
 private class CapturingTokenStore : TokenStorePort {
-    val saved = mutableListOf<StoredToken>()
+    val accessTokens = mutableListOf<StoredAccessToken>()
+    val refreshTokens = mutableListOf<StoredRefreshToken>()
 
-    override fun save(token: StoredToken) {
-        saved += token
+    override fun saveAccessToken(token: StoredAccessToken) {
+        accessTokens += token
     }
 
-    override fun findUserIdByTokenId(tokenId: String): String? {
-        return saved.firstOrNull { it.tokenId == tokenId }?.userId
+    override fun findUserIdByAccessTokenId(tokenId: String): String? {
+        return accessTokens.firstOrNull { it.tokenId == tokenId }?.userId
+    }
+
+    override fun saveRefreshToken(token: StoredRefreshToken) {
+        refreshTokens += token
+    }
+
+    override fun consumeRefreshToken(tokenId: String): StoredRefreshToken? {
+        return refreshTokens.removeAt(refreshTokens.indexOfFirst { it.tokenId == tokenId })
     }
 }
 
 private class RejectingTokenStore : TokenStorePort {
-    override fun save(token: StoredToken) {
+    override fun saveAccessToken(token: StoredAccessToken) {
         error("token should not be stored")
     }
 
-    override fun findUserIdByTokenId(tokenId: String): String? {
+    override fun findUserIdByAccessTokenId(tokenId: String): String? {
         error("token should not be read")
+    }
+
+    override fun saveRefreshToken(token: StoredRefreshToken) {
+        error("refresh token should not be stored")
+    }
+
+    override fun consumeRefreshToken(tokenId: String): StoredRefreshToken? {
+        error("refresh token should not be consumed")
+    }
+}
+
+private class FakeRefreshTokenPort : RefreshTokenPort {
+    override fun issue(userId: String): IssuedRefreshToken {
+        return IssuedRefreshToken(
+            id = "refresh-1",
+            value = "refresh-1.secret",
+            tokenHash = "refresh-hash",
+            expiresAt = Instant.parse("2026-05-02T00:00:00Z"),
+        )
+    }
+
+    override fun hash(rawToken: String): String {
+        return "refresh-hash"
     }
 }
 
@@ -121,6 +161,10 @@ private class FakeLoginUserRepository(
 
     override fun findByLoginId(loginId: LoginId): UserAccount? {
         return userAccount?.takeIf { it.loginId == loginId }
+    }
+
+    override fun findById(userId: UserId): UserAccount? {
+        return userAccount?.takeIf { it.id == userId }
     }
 
     override fun save(userAccount: UserAccount): UserAccount {

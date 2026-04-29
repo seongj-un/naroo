@@ -1,6 +1,8 @@
 package com.example.naroo.auth.adapter.`in`.web
 
 import com.example.naroo.auth.port.`out`.JwtTokenVerifierPort
+import com.example.naroo.auth.port.`out`.StoredAccessToken
+import com.example.naroo.auth.port.`out`.StoredRefreshToken
 import com.example.naroo.auth.port.`out`.TokenStorePort
 import com.example.naroo.auth.port.`out`.VerifiedJwtToken
 import jakarta.servlet.FilterChain
@@ -60,12 +62,20 @@ class JwtAuthenticationFilterTest {
 private class FakeTokenStore(
     private val token: Pair<String, String>? = null,
 ) : TokenStorePort {
-    override fun save(token: com.example.naroo.auth.port.`out`.StoredToken) {
+    override fun saveAccessToken(token: StoredAccessToken) {
         error("token should not be stored")
     }
 
-    override fun findUserIdByTokenId(tokenId: String): String? {
+    override fun findUserIdByAccessTokenId(tokenId: String): String? {
         return token?.takeIf { it.first == tokenId }?.second
+    }
+
+    override fun saveRefreshToken(token: StoredRefreshToken) {
+        error("refresh token should not be stored")
+    }
+
+    override fun consumeRefreshToken(tokenId: String): StoredRefreshToken? {
+        error("refresh token should not be consumed")
     }
 }
 
