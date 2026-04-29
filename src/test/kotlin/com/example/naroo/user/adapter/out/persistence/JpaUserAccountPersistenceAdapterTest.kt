@@ -31,6 +31,19 @@ class JpaUserAccountPersistenceAdapterTest(
     fun setUp() {
         jdbcTemplate.execute(
             """
+                create table if not exists diagnostic_starting_points (
+                    id varchar(36) primary key,
+                    user_id varchar(36) not null unique,
+                    selection_type varchar(32) not null,
+                    math_area varchar(64) not null,
+                    note varchar(200),
+                    created_at datetime(6) not null,
+                    updated_at datetime(6) not null
+                )
+            """.trimIndent(),
+        )
+        jdbcTemplate.execute(
+            """
                 create table if not exists user_accounts (
                     id varchar(36) primary key,
                     login_id varchar(30) not null unique,
@@ -43,6 +56,7 @@ class JpaUserAccountPersistenceAdapterTest(
                 )
             """.trimIndent(),
         )
+        jdbcTemplate.update("delete from diagnostic_starting_points")
         jdbcTemplate.update("delete from user_accounts")
     }
 

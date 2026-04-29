@@ -27,6 +27,7 @@ Useful auth endpoints:
 - `POST /api/auth/login`
 - `POST /api/auth/reissue`
 - `GET /api/auth/me`
+- `POST /api/diagnostics/starting-point`
 
 Example signup body:
 
@@ -45,6 +46,16 @@ Example email verification body:
 ```json
 {
   "token": "token-from-application-log"
+}
+```
+
+Example starting point body:
+
+```json
+{
+  "selectionType": "WEAK_AREA",
+  "mathArea": "FUNCTION",
+  "note": "함수가 제일 헷갈려요"
 }
 ```
 

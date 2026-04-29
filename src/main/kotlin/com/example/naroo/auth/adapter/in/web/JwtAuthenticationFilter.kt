@@ -56,7 +56,8 @@ class JwtAuthenticationFilter(
     }
 
     private fun requiresAuthentication(request: HttpServletRequest): Boolean {
-        return request.requestURI.startsWith("/api/auth/me")
+        return request.requestURI.startsWith("/api/auth/me") ||
+            request.requestURI.startsWith("/api/diagnostics")
     }
 
     private fun bearerToken(request: HttpServletRequest): String? {

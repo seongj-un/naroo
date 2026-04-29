@@ -59,6 +59,22 @@ class JwtAuthenticationFilterTest {
         assertEquals(0, chain.calledCount)
         assertNull(request.getAttribute(JwtAuthentication.REQUEST_ATTRIBUTE))
     }
+
+    @Test
+    fun `protects diagnostic endpoints`() {
+        val filter = JwtAuthenticationFilter(
+            jwtTokenVerifierPort = JwtTokenVerifierPort { error("token should not be verified") },
+            tokenStorePort = FakeTokenStore(),
+        )
+        val request = MockHttpServletRequest("POST", "/api/diagnostics/starting-point")
+        val response = MockHttpServletResponse()
+        val chain = CapturingFilterChain()
+
+        filter.doFilter(request, response, chain)
+
+        assertEquals(401, response.status)
+        assertEquals(0, chain.calledCount)
+    }
 }
 
 private class FakeTokenStore(

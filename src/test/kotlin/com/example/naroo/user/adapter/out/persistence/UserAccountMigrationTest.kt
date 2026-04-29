@@ -23,6 +23,12 @@ class UserAccountMigrationTest {
                     assertEquals(0, resultSet.getInt(1))
                 }
             }
+            connection.prepareStatement("select count(*) from diagnostic_starting_points").use { statement ->
+                statement.executeQuery().use { resultSet ->
+                    resultSet.next()
+                    assertEquals(0, resultSet.getInt(1))
+                }
+            }
         }
     }
 }
