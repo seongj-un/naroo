@@ -1,0 +1,11 @@
+package com.example.naroo.recovery.adapter.`in`.web.errorCode
+
+import com.example.naroo.infrastructure.web.ErrorCode
+
+enum class RecoveryMissionErrorCode(
+    override val value: String,
+) : ErrorCode {
+    DIAGNOSTIC_RESULT_REQUIRED("RECOVERY_DIAGNOSTIC_RESULT_REQUIRED"),
+    RECOVERY_MISSION_NOT_FOUND("RECOVERY_MISSION_NOT_FOUND"),
+    RECOVERY_MISSION_ALREADY_COMPLETED("RECOVERY_MISSION_ALREADY_COMPLETED"),
+}

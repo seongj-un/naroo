@@ -6,6 +6,8 @@ import com.example.naroo.auth.application.AuthException
 import com.example.naroo.diagnostic.adapter.`in`.web.errorCode.DiagnosticExceptionMapper
 import com.example.naroo.diagnostic.application.DiagnosticException
 import com.example.naroo.infrastructure.web.toWrappedDto
+import com.example.naroo.recovery.adapter.`in`.web.errorCode.RecoveryMissionExceptionMapper
+import com.example.naroo.recovery.application.RecoveryMissionException
 import org.springframework.beans.TypeMismatchException
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatusCode
@@ -25,6 +27,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         when (ex) {
             is AuthException -> AuthExceptionMapper.toResponseEntity(ex)
             is DiagnosticException -> DiagnosticExceptionMapper.toResponseEntity(ex)
+            is RecoveryMissionException -> RecoveryMissionExceptionMapper.toResponseEntity(ex)
             else -> ResponseEntity.badRequest().body(GlobalErrorCode.BAD_REQUEST.toWrappedDto())
         }
 
