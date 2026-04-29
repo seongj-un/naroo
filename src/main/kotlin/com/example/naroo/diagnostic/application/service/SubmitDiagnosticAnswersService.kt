@@ -4,7 +4,6 @@ import com.example.naroo.diagnostic.application.DiagnosticException
 import com.example.naroo.diagnostic.domain.DiagnosticAnswer
 import com.example.naroo.diagnostic.domain.DiagnosticAnswerId
 import com.example.naroo.diagnostic.domain.DiagnosticQuestion
-import com.example.naroo.diagnostic.domain.DiagnosticQuestionCatalog
 import com.example.naroo.diagnostic.domain.DiagnosticQuestionChoiceId
 import com.example.naroo.diagnostic.domain.DiagnosticQuestionId
 import com.example.naroo.diagnostic.domain.DiagnosticResult
@@ -16,6 +15,7 @@ import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersCommand
 import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersUseCase
 import com.example.naroo.diagnostic.port.`in`.SubmittedDiagnosticResult
 import com.example.naroo.diagnostic.port.`out`.DiagnosticAnswerRepositoryPort
+import com.example.naroo.diagnostic.port.`out`.DiagnosticQuestionRepositoryPort
 import com.example.naroo.diagnostic.port.`out`.DiagnosticResultRepositoryPort
 import com.example.naroo.diagnostic.port.`out`.DiagnosticSessionRepositoryPort
 import com.example.naroo.user.domain.UserId
@@ -27,6 +27,7 @@ import java.time.Instant
 class SubmitDiagnosticAnswersService(
     private val diagnosticSessionRepositoryPort: DiagnosticSessionRepositoryPort,
     private val diagnosticAnswerRepositoryPort: DiagnosticAnswerRepositoryPort,
+    private val diagnosticQuestionRepositoryPort: DiagnosticQuestionRepositoryPort,
     private val diagnosticResultRepositoryPort: DiagnosticResultRepositoryPort,
     private val clock: Clock,
 ) : SubmitDiagnosticAnswersUseCase {
@@ -43,7 +44,7 @@ class SubmitDiagnosticAnswersService(
             throw DiagnosticException.DiagnosticAlreadyCompleted
         }
 
-        val questions = DiagnosticQuestionCatalog.findByMathArea(session.mathArea)
+        val questions = diagnosticQuestionRepositoryPort.findByMathArea(session.mathArea)
         if (questions.isEmpty()) {
             throw DiagnosticException.DiagnosticQuestionsNotFound
         }
