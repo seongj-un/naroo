@@ -30,6 +30,7 @@ Useful endpoints:
 - `GET /api/auth/me`
 - `POST /api/diagnostics/starting-point`
 - `POST /api/diagnostics`
+- `GET /api/diagnostics/{diagnosticSessionId}/questions`
 
 Example signup body:
 
@@ -65,6 +66,13 @@ Create a diagnostic session after selecting a starting point:
 
 ```bash
 curl -X POST http://localhost:8080/api/diagnostics \
+  -H "Authorization: Bearer <access-token>"
+```
+
+Fetch diagnostic questions:
+
+```bash
+curl http://localhost:8080/api/diagnostics/<diagnostic-session-id>/questions \
   -H "Authorization: Bearer <access-token>"
 ```
 

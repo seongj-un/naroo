@@ -7,6 +7,11 @@ import com.example.naroo.diagnostic.domain.StartingPointSelectionType
 import com.example.naroo.diagnostic.port.`in`.CreateDiagnosticSessionCommand
 import com.example.naroo.diagnostic.port.`in`.CreateDiagnosticSessionUseCase
 import com.example.naroo.diagnostic.port.`in`.CreatedDiagnosticSessionResult
+import com.example.naroo.diagnostic.port.`in`.DiagnosticQuestionChoiceResult
+import com.example.naroo.diagnostic.port.`in`.DiagnosticQuestionResult
+import com.example.naroo.diagnostic.port.`in`.DiagnosticQuestionsResult
+import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsCommand
+import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsUseCase
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointCommand
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointUseCase
 import com.example.naroo.diagnostic.port.`in`.SelectedStartingPointResult
@@ -18,6 +23,63 @@ import org.springframework.mock.web.MockHttpServletRequest
 import java.time.Instant
 
 class DiagnosticControllerTest {
+    @Test
+    fun `get questions returns diagnostic questions for verified user`() {
+        var capturedCommand: GetDiagnosticQuestionsCommand? = null
+        val controller = DiagnosticController(
+            SelectStartingPointUseCase { error("select starting point should not be called") },
+            CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
+            GetDiagnosticQuestionsUseCase { command ->
+                capturedCommand = command
+                DiagnosticQuestionsResult(
+                    diagnosticSessionId = command.diagnosticSessionId,
+                    mathArea = MathArea.FUNCTION,
+                    status = DiagnosticSessionStatus.IN_PROGRESS,
+                    questions = listOf(
+                        DiagnosticQuestionResult(
+                            id = "function-substitution-1",
+                            prompt = "함수 y = 2x + 1에서 x가 3일 때 y의 값은?",
+                            choices = listOf(
+                                DiagnosticQuestionChoiceResult(id = "a", text = "5"),
+                                DiagnosticQuestionChoiceResult(id = "b", text = "7"),
+                                DiagnosticQuestionChoiceResult(id = "unknown", text = "잘 모르겠음"),
+                            ),
+                        ),
+                    ),
+                )
+            },
+        )
+
+        val response = controller.getQuestions(
+            httpRequest = authenticatedRequest(emailVerified = true),
+            diagnosticSessionId = "diagnostic-session-1",
+        )
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals("user-1", capturedCommand?.userId)
+        assertEquals("diagnostic-session-1", capturedCommand?.diagnosticSessionId)
+        assertEquals(MathArea.FUNCTION, response.body?.mathArea)
+        assertEquals(DiagnosticSessionStatus.IN_PROGRESS, response.body?.status)
+        assertEquals("function-substitution-1", response.body?.questions?.single()?.id)
+        assertEquals("unknown", response.body?.questions?.single()?.choices?.last()?.id)
+    }
+
+    @Test
+    fun `get questions requires verified email`() {
+        val controller = DiagnosticController(
+            SelectStartingPointUseCase { error("select starting point should not be called") },
+            CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
+            GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
+        )
+
+        assertThrows(EmailVerificationRequiredException::class.java) {
+            controller.getQuestions(
+                httpRequest = authenticatedRequest(emailVerified = false),
+                diagnosticSessionId = "diagnostic-session-1",
+            )
+        }
+    }
+
     @Test
     fun `create diagnostic session returns created response for verified user`() {
         var capturedCommand: CreateDiagnosticSessionCommand? = null
@@ -35,6 +97,7 @@ class DiagnosticControllerTest {
                     updatedAt = Instant.parse("2026-04-29T00:00:00Z"),
                 )
             },
+            GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
         )
 
         val response = controller.createDiagnosticSession(authenticatedRequest(emailVerified = true))
@@ -52,6 +115,7 @@ class DiagnosticControllerTest {
         val controller = DiagnosticController(
             SelectStartingPointUseCase { error("select starting point should not be called") },
             CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
+            GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
         )
 
         assertThrows(EmailVerificationRequiredException::class.java) {
@@ -76,6 +140,7 @@ class DiagnosticControllerTest {
                 )
             },
             CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
+            GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
         )
         val httpRequest = authenticatedRequest(emailVerified = true)
 
@@ -100,6 +165,7 @@ class DiagnosticControllerTest {
         val controller = DiagnosticController(
             SelectStartingPointUseCase { error("use case should not be called") },
             CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
+            GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
         )
 
         assertThrows(EmailVerificationRequiredException::class.java) {
