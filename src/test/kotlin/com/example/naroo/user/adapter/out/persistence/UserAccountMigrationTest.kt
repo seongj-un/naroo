@@ -8,7 +8,7 @@ import java.sql.DriverManager
 class UserAccountMigrationTest {
     @Test
     fun `migration creates user accounts table`() {
-        val jdbcUrl = "jdbc:h2:mem:naroo-migration-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
+        val jdbcUrl = "jdbc:h2:mem:naroo-migration-test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
 
         Flyway.configure()
             .dataSource(jdbcUrl, "sa", "")

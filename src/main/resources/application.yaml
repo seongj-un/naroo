@@ -2,7 +2,7 @@ spring:
   application:
     name: naroo
   datasource:
-    url: ${NAROO_DATABASE_URL:jdbc:postgresql://localhost:5432/naroo}
+    url: ${NAROO_DATABASE_URL:jdbc:mysql://127.0.0.1:3307/naroo?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false}
     username: ${NAROO_DATABASE_USERNAME:naroo}
     password: ${NAROO_DATABASE_PASSWORD:naroo}
   data:

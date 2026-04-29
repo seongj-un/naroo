@@ -10,7 +10,7 @@ The deployment should support:
 
 - Spring Boot/Kotlin backend
 - Social login
-- PostgreSQL
+- MySQL
 - HTTPS
 - Environment variables
 - Private beta access
@@ -23,7 +23,7 @@ Use a simple single-service deployment:
 Student browser
   -> HTTPS web app
   -> Spring Boot app
-  -> PostgreSQL
+  -> MySQL
   -> OAuth provider
 ```
 
@@ -51,7 +51,7 @@ The exact platform can be chosen later as long as it supports the runtime target
 
 ## Database Target
 
-Use managed PostgreSQL for beta.
+Use managed MySQL for beta.
 
 Required settings:
 
@@ -67,7 +67,7 @@ Do not use in-memory storage for external beta, because next-day return and save
 
 ```text
 SPRING_PROFILES_ACTIVE=prod
-DATABASE_URL=<postgres connection string>
+DATABASE_URL=<mysql connection string>
 OAUTH_PROVIDER=<google|kakao>
 OAUTH_CLIENT_ID=<provider client id>
 OAUTH_CLIENT_SECRET=<provider client secret>
@@ -111,13 +111,13 @@ prod
 
 Local profile:
 
-- Local PostgreSQL or test container
+- Local MySQL or test container
 - Local OAuth redirect URL
 - Debug-friendly logging
 
 Prod profile:
 
-- Hosted PostgreSQL
+- Hosted MySQL
 - HTTPS base URL
 - Secure cookies
 - No debug logs with student data
@@ -248,7 +248,7 @@ Minimum beta dashboard questions:
 
 - OAuth provider: Google, Kakao, or both.
 - Hosting provider.
-- PostgreSQL provider.
+- MySQL provider.
 - Private beta domain or temporary provider URL.
 
 Make these decisions before inviting external testers.

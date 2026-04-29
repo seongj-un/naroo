@@ -69,7 +69,7 @@ class UserAccountJpaEntity(
     @Column(name = "math_status", nullable = false, length = 32)
     var mathStatus: MathStatus = MathStatus.UNKNOWN,
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, columnDefinition = "datetime(6)")
     var createdAt: Instant = Instant.EPOCH,
 ) {
     fun toDomain(): UserAccount {

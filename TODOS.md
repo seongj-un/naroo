@@ -20,17 +20,17 @@ Depends on / blocked by: Beta usage evidence from 5-10 target students.
 
 Status: Done by docs/DEPLOYMENT_STRATEGY.md on 2026-04-28.
 
-What: Choose where the private beta will run and how OAuth secrets, redirect URLs, and PostgreSQL connection settings will be managed.
+What: Choose where the private beta will run and how OAuth secrets, redirect URLs, and MySQL connection settings will be managed.
 
-Why: Social login and PostgreSQL make local-only testing insufficient for sharing a private link with classmates.
+Why: Social login and MySQL make local-only testing insufficient for sharing a private link with classmates.
 
 Pros: Enables real beta testing through a private web link.
 
 Cons: Adds deployment, environment variable, OAuth app, and database setup work.
 
-Context: The design doc calls for a private web link. /plan-eng-review selected social login plus PostgreSQL, so deployment needs to be planned before external testing.
+Context: The design doc calls for a private web link. /plan-eng-review selected social login plus MySQL, so deployment needs to be planned before external testing.
 
-Depends on / blocked by: OAuth provider choice and PostgreSQL hosting choice.
+Depends on / blocked by: OAuth provider choice and MySQL hosting choice.
 
 ## Validate the first diagnostic questions with 5 students
 

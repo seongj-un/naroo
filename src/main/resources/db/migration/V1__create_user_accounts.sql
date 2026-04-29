@@ -4,5 +4,5 @@ create table user_accounts (
     password_hash varchar(255) not null,
     nickname varchar(20) not null,
     math_status varchar(32) not null,
-    created_at timestamp with time zone not null
+    created_at datetime(6) not null
 );
