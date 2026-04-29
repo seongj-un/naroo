@@ -14,6 +14,10 @@ class InMemoryUserAccountPersistenceAdapter : UserAccountRepositoryPort {
         return usersByLoginId.containsKey(loginId.value)
     }
 
+    override fun findByLoginId(loginId: LoginId): UserAccount? {
+        return usersByLoginId[loginId.value]
+    }
+
     override fun save(userAccount: UserAccount): UserAccount {
         usersByLoginId[userAccount.loginId.value] = userAccount
         return userAccount

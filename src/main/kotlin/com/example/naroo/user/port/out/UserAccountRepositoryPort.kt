@@ -5,5 +5,6 @@ import com.example.naroo.user.domain.UserAccount
 
 interface UserAccountRepositoryPort {
     fun existsByLoginId(loginId: LoginId): Boolean
+    fun findByLoginId(loginId: LoginId): UserAccount?
     fun save(userAccount: UserAccount): UserAccount
 }

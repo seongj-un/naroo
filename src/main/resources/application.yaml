@@ -1,3 +1,8 @@
 spring:
   application:
     name: naroo
+
+naroo:
+  jwt:
+    secret: ${NAROO_JWT_SECRET:naroo-local-development-secret-32bytes}
+    access-token-ttl-minutes: ${NAROO_JWT_ACCESS_TOKEN_TTL_MINUTES:60}

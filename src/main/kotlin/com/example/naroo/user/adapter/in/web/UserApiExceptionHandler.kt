@@ -1,6 +1,7 @@
 package com.example.naroo.user.adapter.`in`.web
 
 import com.example.naroo.user.application.service.DuplicateLoginIdException
+import com.example.naroo.user.application.service.InvalidLoginCredentialsException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -19,6 +20,13 @@ class UserApiExceptionHandler {
     fun handleDuplicateLoginId(exception: DuplicateLoginIdException): ResponseEntity<ApiErrorResponse> {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
             ApiErrorResponse(message = exception.message ?: "loginId already exists"),
+        )
+    }
+
+    @ExceptionHandler(InvalidLoginCredentialsException::class)
+    fun handleInvalidLoginCredentials(exception: InvalidLoginCredentialsException): ResponseEntity<ApiErrorResponse> {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+            ApiErrorResponse(message = exception.message ?: "invalid login credentials"),
         )
     }
 }
