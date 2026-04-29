@@ -5,6 +5,10 @@ spring:
     url: ${NAROO_DATABASE_URL:jdbc:postgresql://localhost:5432/naroo}
     username: ${NAROO_DATABASE_USERNAME:naroo}
     password: ${NAROO_DATABASE_PASSWORD:naroo}
+  data:
+    redis:
+      host: ${NAROO_REDIS_HOST:localhost}
+      port: ${NAROO_REDIS_PORT:6379}
   flyway:
     enabled: true
   jpa:
