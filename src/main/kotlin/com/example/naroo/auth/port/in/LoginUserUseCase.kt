@@ -28,4 +28,5 @@ data class LoggedInUser(
     val emailVerified: Boolean,
     val nickname: String,
     val mathStatus: MathStatus,
+    val role: String,
 )

@@ -76,6 +76,7 @@ class UserLearningFlowSmokeTest(
         assertEquals(HttpStatus.OK.value(), login.statusCode)
         val accessToken = login.body.dataMap().string("accessToken")
         assertTrue(accessToken.isNotBlank())
+        assertEquals("STUDENT", login.body.dataMap().map("user").string("role"))
 
         val startingPoint = post(
             path = "/api/diagnostics/starting-point",

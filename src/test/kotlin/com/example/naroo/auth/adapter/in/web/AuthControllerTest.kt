@@ -82,6 +82,7 @@ class AuthControllerTest {
                         emailVerified = false,
                         nickname = "나루",
                         mathStatus = MathStatus.UNKNOWN,
+                        role = "STUDENT",
                     ),
                 )
             },
@@ -104,7 +105,48 @@ class AuthControllerTest {
         assertEquals("user-1", response.body?.data?.user?.id)
         assertEquals("student01@example.com", response.body?.data?.user?.email)
         assertEquals(false, response.body?.data?.user?.emailVerified)
+        assertEquals("STUDENT", response.body?.data?.user?.role)
         assertEquals(true, response.headers["Set-Cookie"]?.single()?.contains("refresh_token=refresh-token"))
+        assertEquals(true, response.headers["Set-Cookie"]?.single()?.contains("Secure"))
+    }
+
+    @Test
+    fun `login can issue local development refresh cookie without secure attribute`() {
+        val controller = AuthController(
+            SignUpUserUseCase { error("sign-up should not be called") },
+            LoginUserUseCase { command ->
+                LoggedInUserResult(
+                    accessToken = "jwt-token",
+                    tokenType = "Bearer",
+                    expiresAt = Instant.parse("2026-04-29T01:00:00Z"),
+                    refreshToken = "refresh-token",
+                    refreshTokenExpiresAt = Instant.parse("2026-05-02T00:00:00Z"),
+                    user = LoggedInUser(
+                        id = "user-1",
+                        loginId = command.loginId,
+                        email = "student01@example.com",
+                        emailVerified = false,
+                        nickname = "나루",
+                        mathStatus = MathStatus.UNKNOWN,
+                        role = "STUDENT",
+                    ),
+                )
+            },
+            ReissueTokenUseCase { error("reissue should not be called") },
+            VerifyEmailUseCase { error("verify email should not be called") },
+            refreshCookieSecure = false,
+        )
+
+        val response = controller.login(
+            LoginUserRequest(
+                loginId = "student01",
+                password = "password123",
+            ),
+        )
+
+        val cookie = response.headers["Set-Cookie"]?.single().orEmpty()
+        assertEquals(true, cookie.contains("refresh_token=refresh-token"))
+        assertEquals(false, cookie.contains("Secure"))
     }
 
     @Test

@@ -13,6 +13,7 @@ import com.example.naroo.infrastructure.web.dto.APiWrappedResponseDto
 import com.example.naroo.infrastructure.web.dto.SuccessResponseDto
 import com.example.naroo.infrastructure.web.dto.toWrappedDto
 import com.example.naroo.user.domain.MathStatus
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
@@ -31,6 +32,8 @@ class AuthController(
     private val loginUserUseCase: LoginUserUseCase,
     private val reissueTokenUseCase: ReissueTokenUseCase,
     private val verifyEmailUseCase: VerifyEmailUseCase,
+    @Value("\${naroo.auth.refresh-cookie-secure:true}")
+    private val refreshCookieSecure: Boolean = true,
 ) {
     @PostMapping("/sign-up")
     fun signUp(@RequestBody request: SignUpUserRequest): ResponseEntity<APiWrappedResponseDto<SignUpUserResponse>> {
@@ -80,6 +83,7 @@ class AuthController(
                         emailVerified = result.user.emailVerified,
                         nickname = result.user.nickname,
                         mathStatus = result.user.mathStatus,
+                        role = result.user.role,
                     ),
                 ).toWrappedDto(),
             )
@@ -126,6 +130,7 @@ class AuthController(
                 loginId = authentication.loginId,
                 emailVerified = authentication.emailVerified,
                 nickname = authentication.nickname,
+                role = authentication.role,
             ).toWrappedDto()
         )
     }
@@ -133,7 +138,7 @@ class AuthController(
     private fun refreshTokenCookie(refreshToken: String, expiresAt: Instant): ResponseCookie {
         return ResponseCookie.from(REFRESH_TOKEN_COOKIE, refreshToken)
             .httpOnly(true)
-            .secure(true)
+            .secure(refreshCookieSecure)
             .sameSite("Strict")
             .path("/api/auth")
             .maxAge(java.time.Duration.between(Instant.now(), expiresAt).coerceAtLeast(java.time.Duration.ZERO))
@@ -198,6 +203,7 @@ data class LoginUserResponseUser(
     val emailVerified: Boolean,
     val nickname: String,
     val mathStatus: MathStatus,
+    val role: String,
 )
 
 data class MeResponse(
@@ -205,4 +211,5 @@ data class MeResponse(
     val loginId: String,
     val emailVerified: Boolean,
     val nickname: String,
+    val role: String,
 ) : SuccessResponseDto

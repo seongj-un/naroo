@@ -20,6 +20,9 @@ spring:
 naroo:
   auth:
     email-verification-token-ttl-minutes: ${NAROO_AUTH_EMAIL_VERIFICATION_TOKEN_TTL_MINUTES:30}
+    refresh-cookie-secure: ${NAROO_AUTH_REFRESH_COOKIE_SECURE:true}
+  cors:
+    allowed-origins: ${NAROO_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
   jwt:
     secret: ${NAROO_JWT_SECRET:naroo-local-development-secret-32bytes}
     access-token-ttl-minutes: ${NAROO_JWT_ACCESS_TOKEN_TTL_MINUTES:60}

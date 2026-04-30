@@ -62,6 +62,7 @@ class LoginUserService(
                 emailVerified = userAccount.emailVerified,
                 nickname = userAccount.nickname.value,
                 mathStatus = userAccount.mathStatus,
+                role = userAccount.role.name,
             ),
         )
     }
