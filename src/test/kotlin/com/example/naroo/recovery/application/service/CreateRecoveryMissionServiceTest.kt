@@ -287,4 +287,8 @@ private class FakeRecoveryMissionTemplateRepository(
     override fun findAll(): List<RecoveryMissionTemplate> {
         return templates.sortedBy { it.conceptTag }
     }
+
+    override fun save(template: RecoveryMissionTemplate): RecoveryMissionTemplate {
+        error("template should not be saved")
+    }
 }

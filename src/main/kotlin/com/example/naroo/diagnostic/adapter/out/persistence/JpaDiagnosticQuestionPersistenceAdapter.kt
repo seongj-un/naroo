@@ -15,6 +15,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 
 @Repository
 class JpaDiagnosticQuestionPersistenceAdapter(
@@ -32,6 +33,18 @@ class JpaDiagnosticQuestionPersistenceAdapter(
 
     override fun findAll(): List<DiagnosticQuestion> {
         return toDomain(questionRepository.findAllByOrderByMathAreaAscDisplayOrderAsc())
+    }
+
+    @Transactional
+    override fun save(question: DiagnosticQuestion): DiagnosticQuestion {
+        questionRepository.saveAndFlush(DiagnosticQuestionJpaEntity.from(question))
+        choiceRepository.deleteByQuestionId(question.id.value)
+        choiceRepository.saveAllAndFlush(
+            question.choices.mapIndexed { index, choice ->
+                DiagnosticQuestionChoiceJpaEntity.from(question.id.value, choice, index + 1)
+            },
+        )
+        return question
     }
 
     private fun toDomain(questions: List<DiagnosticQuestionJpaEntity>): List<DiagnosticQuestion> {
@@ -60,6 +73,7 @@ interface SpringDataDiagnosticQuestionJpaRepository : JpaRepository<DiagnosticQu
 
 interface SpringDataDiagnosticQuestionChoiceJpaRepository : JpaRepository<DiagnosticQuestionChoiceJpaEntity, String> {
     fun findAllByQuestionIdInOrderByDisplayOrderAsc(questionIds: List<String>): List<DiagnosticQuestionChoiceJpaEntity>
+    fun deleteByQuestionId(questionId: String)
 }
 
 @Entity
@@ -101,6 +115,20 @@ class DiagnosticQuestionJpaEntity(
             status = status,
         )
     }
+
+    companion object {
+        fun from(question: DiagnosticQuestion): DiagnosticQuestionJpaEntity {
+            return DiagnosticQuestionJpaEntity(
+                id = question.id.value,
+                mathArea = question.mathArea,
+                prompt = question.prompt,
+                correctChoiceId = question.correctChoiceId.value,
+                conceptTag = question.conceptTag,
+                displayOrder = question.displayOrder,
+                status = question.status,
+            )
+        }
+    }
 }
 
 @Entity
@@ -127,5 +155,21 @@ class DiagnosticQuestionChoiceJpaEntity(
             id = DiagnosticQuestionChoiceId(choiceId),
             text = text,
         )
+    }
+
+    companion object {
+        fun from(
+            questionId: String,
+            choice: DiagnosticQuestionChoice,
+            displayOrder: Int,
+        ): DiagnosticQuestionChoiceJpaEntity {
+            return DiagnosticQuestionChoiceJpaEntity(
+                id = "$questionId:${choice.id.value}",
+                questionId = questionId,
+                choiceId = choice.id.value,
+                text = choice.text,
+                displayOrder = displayOrder,
+            )
+        }
     }
 }

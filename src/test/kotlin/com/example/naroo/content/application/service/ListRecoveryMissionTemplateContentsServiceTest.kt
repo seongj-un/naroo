@@ -40,4 +40,8 @@ private class FakeContentRecoveryMissionTemplateRepository(
     override fun findAll(): List<RecoveryMissionTemplate> {
         return templates
     }
+
+    override fun save(template: RecoveryMissionTemplate): RecoveryMissionTemplate {
+        error("template should not be saved")
+    }
 }

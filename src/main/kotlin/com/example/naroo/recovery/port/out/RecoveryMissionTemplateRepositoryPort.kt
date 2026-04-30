@@ -5,4 +5,5 @@ import com.example.naroo.recovery.application.service.RecoveryMissionTemplate
 interface RecoveryMissionTemplateRepositoryPort {
     fun findActiveByConceptTag(conceptTag: String): RecoveryMissionTemplate?
     fun findAll(): List<RecoveryMissionTemplate>
+    fun save(template: RecoveryMissionTemplate): RecoveryMissionTemplate
 }

@@ -23,6 +23,10 @@ class JpaRecoveryMissionTemplatePersistenceAdapter(
     override fun findAll(): List<RecoveryMissionTemplate> {
         return repository.findAllByOrderByConceptTagAsc().map(RecoveryMissionTemplateJpaEntity::toDomain)
     }
+
+    override fun save(template: RecoveryMissionTemplate): RecoveryMissionTemplate {
+        return repository.saveAndFlush(RecoveryMissionTemplateJpaEntity.from(template)).toDomain()
+    }
 }
 
 interface SpringDataRecoveryMissionTemplateJpaRepository : JpaRepository<RecoveryMissionTemplateJpaEntity, String> {
@@ -70,5 +74,16 @@ class RecoveryMissionTemplateJpaEntity(
 
     companion object {
         private const val HINT_SEPARATOR = "\n---\n"
+
+        fun from(template: RecoveryMissionTemplate): RecoveryMissionTemplateJpaEntity {
+            return RecoveryMissionTemplateJpaEntity(
+                conceptTag = template.conceptTag,
+                title = template.title,
+                prompt = template.prompt,
+                hints = template.hints.joinToString(HINT_SEPARATOR),
+                estimatedMinutes = template.estimatedMinutes,
+                status = template.status,
+            )
+        }
     }
 }

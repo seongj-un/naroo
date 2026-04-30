@@ -112,6 +112,10 @@ private class FakeSessionDiagnosticQuestionRepository(
     override fun findAll(): List<DiagnosticQuestion> {
         return questions
     }
+
+    override fun save(question: DiagnosticQuestion): DiagnosticQuestion {
+        error("question should not be saved")
+    }
 }
 
 private class CapturingSessionQuestionSnapshotRepository : DiagnosticSessionQuestionSnapshotRepositoryPort {
