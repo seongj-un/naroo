@@ -15,8 +15,8 @@ import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersCommand
 import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersUseCase
 import com.example.naroo.diagnostic.port.`in`.SubmittedDiagnosticResult
 import com.example.naroo.diagnostic.port.`out`.DiagnosticAnswerRepositoryPort
-import com.example.naroo.diagnostic.port.`out`.DiagnosticQuestionRepositoryPort
 import com.example.naroo.diagnostic.port.`out`.DiagnosticResultRepositoryPort
+import com.example.naroo.diagnostic.port.`out`.DiagnosticSessionQuestionSnapshotRepositoryPort
 import com.example.naroo.diagnostic.port.`out`.DiagnosticSessionRepositoryPort
 import com.example.naroo.user.domain.UserId
 import org.springframework.stereotype.Service
@@ -27,7 +27,7 @@ import java.time.Instant
 class SubmitDiagnosticAnswersService(
     private val diagnosticSessionRepositoryPort: DiagnosticSessionRepositoryPort,
     private val diagnosticAnswerRepositoryPort: DiagnosticAnswerRepositoryPort,
-    private val diagnosticQuestionRepositoryPort: DiagnosticQuestionRepositoryPort,
+    private val diagnosticSessionQuestionSnapshotRepositoryPort: DiagnosticSessionQuestionSnapshotRepositoryPort,
     private val diagnosticResultRepositoryPort: DiagnosticResultRepositoryPort,
     private val clock: Clock,
 ) : SubmitDiagnosticAnswersUseCase {
@@ -44,7 +44,7 @@ class SubmitDiagnosticAnswersService(
             throw DiagnosticException.DiagnosticAlreadyCompleted
         }
 
-        val questions = diagnosticQuestionRepositoryPort.findActiveByMathArea(session.mathArea)
+        val questions = diagnosticSessionQuestionSnapshotRepositoryPort.findByDiagnosticSessionId(session.id)
         if (questions.isEmpty()) {
             throw DiagnosticException.DiagnosticQuestionsNotFound
         }

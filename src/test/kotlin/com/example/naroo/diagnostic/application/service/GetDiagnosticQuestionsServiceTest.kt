@@ -11,7 +11,7 @@ import com.example.naroo.diagnostic.domain.DiagnosticSessionStatus
 import com.example.naroo.diagnostic.domain.MathArea
 import com.example.naroo.diagnostic.domain.StartingPointSelectionId
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsCommand
-import com.example.naroo.diagnostic.port.`out`.DiagnosticQuestionRepositoryPort
+import com.example.naroo.diagnostic.port.`out`.DiagnosticSessionQuestionSnapshotRepositoryPort
 import com.example.naroo.diagnostic.port.`out`.DiagnosticSessionRepositoryPort
 import com.example.naroo.user.domain.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -28,7 +28,7 @@ class GetDiagnosticQuestionsServiceTest {
         val repository = CapturingQuestionDiagnosticSessionRepository(diagnosticSession())
         val service = GetDiagnosticQuestionsService(
             diagnosticSessionRepositoryPort = repository,
-            diagnosticQuestionRepositoryPort = FakeDiagnosticQuestionRepository(functionQuestions()),
+            diagnosticSessionQuestionSnapshotRepositoryPort = FakeDiagnosticQuestionSnapshotRepository(functionQuestions()),
             clock = Clock.fixed(Instant.parse("2026-04-29T01:00:00Z"), ZoneOffset.UTC),
         )
 
@@ -55,7 +55,7 @@ class GetDiagnosticQuestionsServiceTest {
         )
         val service = GetDiagnosticQuestionsService(
             diagnosticSessionRepositoryPort = repository,
-            diagnosticQuestionRepositoryPort = FakeDiagnosticQuestionRepository(functionQuestions()),
+            diagnosticSessionQuestionSnapshotRepositoryPort = FakeDiagnosticQuestionSnapshotRepository(functionQuestions()),
             clock = Clock.fixed(Instant.parse("2026-04-29T01:00:00Z"), ZoneOffset.UTC),
         )
 
@@ -74,7 +74,7 @@ class GetDiagnosticQuestionsServiceTest {
     fun `rejects missing or other user's diagnostic session`() {
         val service = GetDiagnosticQuestionsService(
             diagnosticSessionRepositoryPort = CapturingQuestionDiagnosticSessionRepository(diagnosticSession()),
-            diagnosticQuestionRepositoryPort = FakeDiagnosticQuestionRepository(functionQuestions()),
+            diagnosticSessionQuestionSnapshotRepositoryPort = FakeDiagnosticQuestionSnapshotRepository(functionQuestions()),
             clock = Clock.fixed(Instant.parse("2026-04-29T01:00:00Z"), ZoneOffset.UTC),
         )
 
@@ -141,15 +141,18 @@ class GetDiagnosticQuestionsServiceTest {
     }
 }
 
-private class FakeDiagnosticQuestionRepository(
+private class FakeDiagnosticQuestionSnapshotRepository(
     private val questions: List<DiagnosticQuestion>,
-) : DiagnosticQuestionRepositoryPort {
-    override fun findActiveByMathArea(mathArea: MathArea): List<DiagnosticQuestion> {
-        return questions.filter { it.mathArea == mathArea }.sortedBy { it.displayOrder }
+) : DiagnosticSessionQuestionSnapshotRepositoryPort {
+    override fun findByDiagnosticSessionId(diagnosticSessionId: DiagnosticSessionId): List<DiagnosticQuestion> {
+        return questions.sortedBy { it.displayOrder }
     }
 
-    override fun findAll(): List<DiagnosticQuestion> {
-        return questions.sortedWith(compareBy<DiagnosticQuestion> { it.mathArea }.thenBy { it.displayOrder })
+    override fun saveSnapshot(
+        diagnosticSessionId: DiagnosticSessionId,
+        questions: List<DiagnosticQuestion>,
+    ): List<DiagnosticQuestion> {
+        error("snapshot should not be saved")
     }
 }
 

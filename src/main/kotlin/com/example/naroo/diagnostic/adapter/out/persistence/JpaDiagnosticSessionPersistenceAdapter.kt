@@ -49,6 +49,9 @@ class DiagnosticSessionJpaEntity(
     @Column(name = "math_area", nullable = false, length = 64)
     var mathArea: MathArea = MathArea.FUNCTION,
 
+    @Column(name = "question_snapshot_version", nullable = false)
+    var questionSnapshotVersion: Int = 1,
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)
     var status: DiagnosticSessionStatus = DiagnosticSessionStatus.READY,
@@ -65,6 +68,7 @@ class DiagnosticSessionJpaEntity(
             userId = UserId(userId),
             startingPointSelectionId = StartingPointSelectionId(startingPointSelectionId),
             mathArea = mathArea,
+            questionSnapshotVersion = questionSnapshotVersion,
             status = status,
             createdAt = createdAt,
             updatedAt = updatedAt,
@@ -78,6 +82,7 @@ class DiagnosticSessionJpaEntity(
                 userId = session.userId.value,
                 startingPointSelectionId = session.startingPointSelectionId.value,
                 mathArea = session.mathArea,
+                questionSnapshotVersion = session.questionSnapshotVersion,
                 status = session.status,
                 createdAt = session.createdAt,
                 updatedAt = session.updatedAt,

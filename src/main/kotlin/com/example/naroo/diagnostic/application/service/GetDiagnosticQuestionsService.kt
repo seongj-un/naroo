@@ -9,7 +9,7 @@ import com.example.naroo.diagnostic.port.`in`.DiagnosticQuestionResult
 import com.example.naroo.diagnostic.port.`in`.DiagnosticQuestionsResult
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsCommand
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsUseCase
-import com.example.naroo.diagnostic.port.`out`.DiagnosticQuestionRepositoryPort
+import com.example.naroo.diagnostic.port.`out`.DiagnosticSessionQuestionSnapshotRepositoryPort
 import com.example.naroo.diagnostic.port.`out`.DiagnosticSessionRepositoryPort
 import com.example.naroo.user.domain.UserId
 import org.springframework.stereotype.Service
@@ -19,7 +19,7 @@ import java.time.Instant
 @Service
 class GetDiagnosticQuestionsService(
     private val diagnosticSessionRepositoryPort: DiagnosticSessionRepositoryPort,
-    private val diagnosticQuestionRepositoryPort: DiagnosticQuestionRepositoryPort,
+    private val diagnosticSessionQuestionSnapshotRepositoryPort: DiagnosticSessionQuestionSnapshotRepositoryPort,
     private val clock: Clock,
 ) : GetDiagnosticQuestionsUseCase {
     override fun get(command: GetDiagnosticQuestionsCommand): DiagnosticQuestionsResult {
@@ -39,7 +39,7 @@ class GetDiagnosticQuestionsService(
             session
         }
 
-        val questions = diagnosticQuestionRepositoryPort.findActiveByMathArea(activeSession.mathArea)
+        val questions = diagnosticSessionQuestionSnapshotRepositoryPort.findByDiagnosticSessionId(activeSession.id)
         if (questions.isEmpty()) {
             throw DiagnosticException.DiagnosticQuestionsNotFound
         }

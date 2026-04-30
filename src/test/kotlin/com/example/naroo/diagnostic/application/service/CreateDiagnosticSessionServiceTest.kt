@@ -1,6 +1,10 @@
 package com.example.naroo.diagnostic.application.service
 
 import com.example.naroo.diagnostic.application.DiagnosticException
+import com.example.naroo.diagnostic.domain.DiagnosticQuestion
+import com.example.naroo.diagnostic.domain.DiagnosticQuestionChoice
+import com.example.naroo.diagnostic.domain.DiagnosticQuestionChoiceId
+import com.example.naroo.diagnostic.domain.DiagnosticQuestionId
 import com.example.naroo.diagnostic.domain.DiagnosticSession
 import com.example.naroo.diagnostic.domain.DiagnosticSessionId
 import com.example.naroo.diagnostic.domain.DiagnosticSessionStatus
@@ -10,7 +14,9 @@ import com.example.naroo.diagnostic.domain.StartingPointSelection
 import com.example.naroo.diagnostic.domain.StartingPointSelectionId
 import com.example.naroo.diagnostic.domain.StartingPointSelectionType
 import com.example.naroo.diagnostic.port.`in`.CreateDiagnosticSessionCommand
+import com.example.naroo.diagnostic.port.`out`.DiagnosticQuestionRepositoryPort
 import com.example.naroo.diagnostic.port.`out`.DiagnosticSessionIdGeneratorPort
+import com.example.naroo.diagnostic.port.`out`.DiagnosticSessionQuestionSnapshotRepositoryPort
 import com.example.naroo.diagnostic.port.`out`.DiagnosticSessionRepositoryPort
 import com.example.naroo.diagnostic.port.`out`.StartingPointSelectionRepositoryPort
 import com.example.naroo.user.domain.UserId
@@ -28,6 +34,8 @@ class CreateDiagnosticSessionServiceTest {
         val service = CreateDiagnosticSessionService(
             startingPointSelectionRepositoryPort = FakeSessionStartingPointRepository(startingPointSelection()),
             diagnosticSessionRepositoryPort = sessionRepository,
+            diagnosticQuestionRepositoryPort = FakeSessionDiagnosticQuestionRepository(functionQuestions()),
+            diagnosticSessionQuestionSnapshotRepositoryPort = CapturingSessionQuestionSnapshotRepository(),
             diagnosticSessionIdGeneratorPort = DiagnosticSessionIdGeneratorPort {
                 DiagnosticSessionId("diagnostic-session-1")
             },
@@ -40,6 +48,7 @@ class CreateDiagnosticSessionServiceTest {
         assertEquals("user-1", result.userId)
         assertEquals("starting-point-1", result.startingPointSelectionId)
         assertEquals(MathArea.FUNCTION, result.mathArea)
+        assertEquals(1, result.questionSnapshotVersion)
         assertEquals(DiagnosticSessionStatus.READY, result.status)
         assertEquals(Instant.parse("2026-04-29T00:00:00Z"), result.createdAt)
         assertEquals(sessionRepository.saved.single().id.value, result.id)
@@ -50,6 +59,8 @@ class CreateDiagnosticSessionServiceTest {
         val service = CreateDiagnosticSessionService(
             startingPointSelectionRepositoryPort = FakeSessionStartingPointRepository(null),
             diagnosticSessionRepositoryPort = CapturingDiagnosticSessionRepository(),
+            diagnosticQuestionRepositoryPort = FakeSessionDiagnosticQuestionRepository(functionQuestions()),
+            diagnosticSessionQuestionSnapshotRepositoryPort = CapturingSessionQuestionSnapshotRepository(),
             diagnosticSessionIdGeneratorPort = DiagnosticSessionIdGeneratorPort {
                 DiagnosticSessionId("diagnostic-session-1")
             },
@@ -71,6 +82,51 @@ class CreateDiagnosticSessionServiceTest {
             createdAt = Instant.parse("2026-04-29T00:00:00Z"),
             updatedAt = Instant.parse("2026-04-29T00:00:00Z"),
         )
+    }
+
+    private fun functionQuestions(): List<DiagnosticQuestion> {
+        return listOf(
+            DiagnosticQuestion(
+                id = DiagnosticQuestionId("function-slope-1"),
+                mathArea = MathArea.FUNCTION,
+                prompt = "일차함수 y = -3x + 2의 기울기는?",
+                choices = listOf(
+                    DiagnosticQuestionChoice(DiagnosticQuestionChoiceId("a"), "-3"),
+                    DiagnosticQuestionChoice(DiagnosticQuestionChoiceId("unknown"), "잘 모르겠음"),
+                ),
+                correctChoiceId = DiagnosticQuestionChoiceId("a"),
+                conceptTag = "linear_function_slope",
+                displayOrder = 1,
+            ),
+        )
+    }
+}
+
+private class FakeSessionDiagnosticQuestionRepository(
+    private val questions: List<DiagnosticQuestion>,
+) : DiagnosticQuestionRepositoryPort {
+    override fun findActiveByMathArea(mathArea: MathArea): List<DiagnosticQuestion> {
+        return questions.filter { it.mathArea == mathArea }
+    }
+
+    override fun findAll(): List<DiagnosticQuestion> {
+        return questions
+    }
+}
+
+private class CapturingSessionQuestionSnapshotRepository : DiagnosticSessionQuestionSnapshotRepositoryPort {
+    val saved = mutableMapOf<DiagnosticSessionId, List<DiagnosticQuestion>>()
+
+    override fun findByDiagnosticSessionId(diagnosticSessionId: DiagnosticSessionId): List<DiagnosticQuestion> {
+        return saved[diagnosticSessionId].orEmpty()
+    }
+
+    override fun saveSnapshot(
+        diagnosticSessionId: DiagnosticSessionId,
+        questions: List<DiagnosticQuestion>,
+    ): List<DiagnosticQuestion> {
+        saved[diagnosticSessionId] = questions
+        return questions
     }
 }
 

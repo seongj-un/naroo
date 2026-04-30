@@ -15,8 +15,8 @@ import com.example.naroo.diagnostic.domain.StartingPointSelectionId
 import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswerCommand
 import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersCommand
 import com.example.naroo.diagnostic.port.`out`.DiagnosticAnswerRepositoryPort
-import com.example.naroo.diagnostic.port.`out`.DiagnosticQuestionRepositoryPort
 import com.example.naroo.diagnostic.port.`out`.DiagnosticResultRepositoryPort
+import com.example.naroo.diagnostic.port.`out`.DiagnosticSessionQuestionSnapshotRepositoryPort
 import com.example.naroo.diagnostic.port.`out`.DiagnosticSessionRepositoryPort
 import com.example.naroo.user.domain.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -35,7 +35,7 @@ class SubmitDiagnosticAnswersServiceTest {
         val service = SubmitDiagnosticAnswersService(
             diagnosticSessionRepositoryPort = sessionRepository,
             diagnosticAnswerRepositoryPort = answerRepository,
-            diagnosticQuestionRepositoryPort = FakeSubmitDiagnosticQuestionRepository(functionQuestions()),
+            diagnosticSessionQuestionSnapshotRepositoryPort = FakeSubmitDiagnosticQuestionSnapshotRepository(functionQuestions()),
             diagnosticResultRepositoryPort = resultRepository,
             clock = Clock.fixed(Instant.parse("2026-04-29T02:00:00Z"), ZoneOffset.UTC),
         )
@@ -72,7 +72,7 @@ class SubmitDiagnosticAnswersServiceTest {
                 diagnosticSession().copy(status = DiagnosticSessionStatus.COMPLETED),
             ),
             diagnosticAnswerRepositoryPort = CapturingDiagnosticAnswerRepository(),
-            diagnosticQuestionRepositoryPort = FakeSubmitDiagnosticQuestionRepository(functionQuestions()),
+            diagnosticSessionQuestionSnapshotRepositoryPort = FakeSubmitDiagnosticQuestionSnapshotRepository(functionQuestions()),
             diagnosticResultRepositoryPort = CapturingDiagnosticResultRepository(),
             clock = Clock.fixed(Instant.parse("2026-04-29T02:00:00Z"), ZoneOffset.UTC),
         )
@@ -87,7 +87,7 @@ class SubmitDiagnosticAnswersServiceTest {
         val service = SubmitDiagnosticAnswersService(
             diagnosticSessionRepositoryPort = CapturingSubmitDiagnosticSessionRepository(diagnosticSession()),
             diagnosticAnswerRepositoryPort = CapturingDiagnosticAnswerRepository(),
-            diagnosticQuestionRepositoryPort = FakeSubmitDiagnosticQuestionRepository(functionQuestions()),
+            diagnosticSessionQuestionSnapshotRepositoryPort = FakeSubmitDiagnosticQuestionSnapshotRepository(functionQuestions()),
             diagnosticResultRepositoryPort = CapturingDiagnosticResultRepository(),
             clock = Clock.fixed(Instant.parse("2026-04-29T02:00:00Z"), ZoneOffset.UTC),
         )
@@ -161,15 +161,18 @@ class SubmitDiagnosticAnswersServiceTest {
     }
 }
 
-private class FakeSubmitDiagnosticQuestionRepository(
+private class FakeSubmitDiagnosticQuestionSnapshotRepository(
     private val questions: List<DiagnosticQuestion>,
-) : DiagnosticQuestionRepositoryPort {
-    override fun findActiveByMathArea(mathArea: MathArea): List<DiagnosticQuestion> {
-        return questions.filter { it.mathArea == mathArea }.sortedBy { it.displayOrder }
+) : DiagnosticSessionQuestionSnapshotRepositoryPort {
+    override fun findByDiagnosticSessionId(diagnosticSessionId: DiagnosticSessionId): List<DiagnosticQuestion> {
+        return questions.sortedBy { it.displayOrder }
     }
 
-    override fun findAll(): List<DiagnosticQuestion> {
-        return questions.sortedWith(compareBy<DiagnosticQuestion> { it.mathArea }.thenBy { it.displayOrder })
+    override fun saveSnapshot(
+        diagnosticSessionId: DiagnosticSessionId,
+        questions: List<DiagnosticQuestion>,
+    ): List<DiagnosticQuestion> {
+        error("snapshot should not be saved")
     }
 }
 

@@ -108,6 +108,7 @@ class DiagnosticControllerTest {
                     userId = command.userId,
                     startingPointSelectionId = "starting-point-1",
                     mathArea = MathArea.FUNCTION,
+                    questionSnapshotVersion = 1,
                     status = DiagnosticSessionStatus.READY,
                     createdAt = Instant.parse("2026-04-29T00:00:00Z"),
                     updatedAt = Instant.parse("2026-04-29T00:00:00Z"),

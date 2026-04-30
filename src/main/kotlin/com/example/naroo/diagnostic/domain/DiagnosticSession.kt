@@ -8,6 +8,7 @@ data class DiagnosticSession(
     val userId: UserId,
     val startingPointSelectionId: StartingPointSelectionId,
     val mathArea: MathArea,
+    val questionSnapshotVersion: Int = 1,
     val status: DiagnosticSessionStatus,
     val createdAt: Instant,
     val updatedAt: Instant,

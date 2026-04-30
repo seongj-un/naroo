@@ -17,6 +17,7 @@ data class CreatedDiagnosticSessionResult(
     val userId: String,
     val startingPointSelectionId: String,
     val mathArea: MathArea,
+    val questionSnapshotVersion: Int,
     val status: DiagnosticSessionStatus,
     val createdAt: Instant,
     val updatedAt: Instant,
