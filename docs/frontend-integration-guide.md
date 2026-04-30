@@ -1,4 +1,4 @@
-지금# Naroo Frontend Integration Guide
+# Naroo Frontend Integration Guide
 
 Last updated: 2026-04-30
 
@@ -6,13 +6,14 @@ Last updated: 2026-04-30
 
 ## 가장 중요한 판단
 
-프론트 개발을 바로 시작해도 되지만, 아래 두 가지는 먼저 결정해야 한다.
+프론트 개발을 바로 시작해도 되며, 아래 계약은 백엔드에 반영된 확정 정책이다.
 
 1. **CORS**
    - 백엔드에 명시적인 CORS 설정이 추가되어 있다.
    - 기본 허용 origin은 `http://localhost:3000`, `http://localhost:5173`이다.
    - 추가 origin은 `NAROO_CORS_ALLOWED_ORIGINS`로 콤마 구분 설정한다.
    - refresh cookie를 쓰기 위해 `credentials: true` 정책을 사용하므로 allowed origin에 `*`는 쓰지 않는다.
+   - 프론트 요청에서 cookie가 필요한 API는 `credentials: "include"`를 같이 사용한다.
 
 2. **refresh token cookie**
    - 로그인/재발급 응답은 `refresh_token` 쿠키를 내려준다.
@@ -20,7 +21,14 @@ Last updated: 2026-04-30
    - 운영 기본값은 `Secure=true`이다.
    - 로컬 HTTP 개발에서는 `NAROO_AUTH_REFRESH_COOKIE_SECURE=false`로 실행한다.
 
-추가로, `GET /api/contents/diagnostic-questions`는 `correctChoiceId`를 포함한다. 학생용 진단 화면에서 이 API를 쓰면 정답이 노출된다. 학생용 화면은 반드시 `GET /api/diagnostics/{diagnosticSessionId}/questions`만 사용해야 한다.
+3. **role**
+   - 로그인 응답의 `user.role`과 `/api/auth/me` 응답의 `role`을 공식 계약으로 사용한다.
+   - 프론트는 JWT payload를 직접 디코딩하지 않는다.
+   - 관리자 화면 접근 판단은 `role === "ADMIN"` 기준이다.
+
+4. **학생용 진단 문항**
+   - 학생 진단 화면은 `GET /api/diagnostics/{diagnosticSessionId}/questions`만 사용한다.
+   - 콘텐츠 관리용 `GET /api/contents/diagnostic-questions`는 정답을 포함하므로 학생 화면에서 호출하지 않는다.
 
 ## 실행 환경
 
@@ -30,6 +38,12 @@ Backend start:
 
 ```bash
 ./gradlew bootRun
+```
+
+Local frontend cookie test start:
+
+```bash
+NAROO_AUTH_REFRESH_COOKIE_SECURE=false ./gradlew bootRun
 ```
 
 Backend test:
@@ -58,6 +72,12 @@ Environment variables:
 - `NAROO_JWT_SECRET`
 - `NAROO_JWT_ACCESS_TOKEN_TTL_MINUTES`
 - `NAROO_JWT_REFRESH_TOKEN_TTL_DAYS`
+
+Frontend local defaults:
+
+- API base URL: `http://localhost:8080`
+- Allowed origins by default: `http://localhost:3000`, `http://localhost:5173`
+- If the frontend uses another port, add it to `NAROO_CORS_ALLOWED_ORIGINS`.
 
 ## 공통 응답 형식
 
@@ -117,7 +137,7 @@ await fetch(`${API_BASE_URL}/api/me/learning-home`, {
 });
 ```
 
-Refresh example:
+Cross-origin authenticated fetch with cookie support:
 
 ```ts
 await fetch(`${API_BASE_URL}/api/auth/reissue`, {
