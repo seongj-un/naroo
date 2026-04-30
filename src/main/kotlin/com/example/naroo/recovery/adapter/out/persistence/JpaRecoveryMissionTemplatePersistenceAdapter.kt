@@ -1,9 +1,12 @@
 package com.example.naroo.recovery.adapter.`out`.persistence
 
 import com.example.naroo.recovery.application.service.RecoveryMissionTemplate
+import com.example.naroo.recovery.application.service.RecoveryMissionTemplateStatus
 import com.example.naroo.recovery.port.`out`.RecoveryMissionTemplateRepositoryPort
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.springframework.data.jpa.repository.JpaRepository
@@ -13,8 +16,8 @@ import org.springframework.stereotype.Repository
 class JpaRecoveryMissionTemplatePersistenceAdapter(
     private val repository: SpringDataRecoveryMissionTemplateJpaRepository,
 ) : RecoveryMissionTemplateRepositoryPort {
-    override fun findByConceptTag(conceptTag: String): RecoveryMissionTemplate? {
-        return repository.findById(conceptTag).map(RecoveryMissionTemplateJpaEntity::toDomain).orElse(null)
+    override fun findActiveByConceptTag(conceptTag: String): RecoveryMissionTemplate? {
+        return repository.findByConceptTagAndStatus(conceptTag, RecoveryMissionTemplateStatus.ACTIVE)?.toDomain()
     }
 
     override fun findAll(): List<RecoveryMissionTemplate> {
@@ -23,6 +26,11 @@ class JpaRecoveryMissionTemplatePersistenceAdapter(
 }
 
 interface SpringDataRecoveryMissionTemplateJpaRepository : JpaRepository<RecoveryMissionTemplateJpaEntity, String> {
+    fun findByConceptTagAndStatus(
+        conceptTag: String,
+        status: RecoveryMissionTemplateStatus,
+    ): RecoveryMissionTemplateJpaEntity?
+
     fun findAllByOrderByConceptTagAsc(): List<RecoveryMissionTemplateJpaEntity>
 }
 
@@ -44,6 +52,10 @@ class RecoveryMissionTemplateJpaEntity(
 
     @Column(name = "estimated_minutes", nullable = false)
     var estimatedMinutes: Int = 10,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 32)
+    var status: RecoveryMissionTemplateStatus = RecoveryMissionTemplateStatus.ACTIVE,
 ) {
     fun toDomain(): RecoveryMissionTemplate {
         return RecoveryMissionTemplate(
@@ -52,6 +64,7 @@ class RecoveryMissionTemplateJpaEntity(
             prompt = prompt,
             hints = hints.replace("\\n", "\n").split(HINT_SEPARATOR).filter { it.isNotBlank() },
             estimatedMinutes = estimatedMinutes,
+            status = status,
         )
     }
 

@@ -33,7 +33,7 @@ class ListRecoveryMissionTemplateContentsServiceTest {
 private class FakeContentRecoveryMissionTemplateRepository(
     private val templates: List<RecoveryMissionTemplate>,
 ) : RecoveryMissionTemplateRepositoryPort {
-    override fun findByConceptTag(conceptTag: String): RecoveryMissionTemplate? {
+    override fun findActiveByConceptTag(conceptTag: String): RecoveryMissionTemplate? {
         return templates.firstOrNull { it.conceptTag == conceptTag }
     }
 

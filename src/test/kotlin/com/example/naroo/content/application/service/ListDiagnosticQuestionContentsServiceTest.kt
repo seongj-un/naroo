@@ -45,7 +45,7 @@ class ListDiagnosticQuestionContentsServiceTest {
 private class FakeContentDiagnosticQuestionRepository(
     private val questions: List<DiagnosticQuestion>,
 ) : DiagnosticQuestionRepositoryPort {
-    override fun findByMathArea(mathArea: MathArea): List<DiagnosticQuestion> {
+    override fun findActiveByMathArea(mathArea: MathArea): List<DiagnosticQuestion> {
         return questions.filter { it.mathArea == mathArea }
     }
 

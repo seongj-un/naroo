@@ -44,7 +44,7 @@ class SubmitDiagnosticAnswersService(
             throw DiagnosticException.DiagnosticAlreadyCompleted
         }
 
-        val questions = diagnosticQuestionRepositoryPort.findByMathArea(session.mathArea)
+        val questions = diagnosticQuestionRepositoryPort.findActiveByMathArea(session.mathArea)
         if (questions.isEmpty()) {
             throw DiagnosticException.DiagnosticQuestionsNotFound
         }

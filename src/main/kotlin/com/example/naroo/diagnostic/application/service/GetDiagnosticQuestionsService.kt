@@ -39,7 +39,7 @@ class GetDiagnosticQuestionsService(
             session
         }
 
-        val questions = diagnosticQuestionRepositoryPort.findByMathArea(activeSession.mathArea)
+        val questions = diagnosticQuestionRepositoryPort.findActiveByMathArea(activeSession.mathArea)
         if (questions.isEmpty()) {
             throw DiagnosticException.DiagnosticQuestionsNotFound
         }

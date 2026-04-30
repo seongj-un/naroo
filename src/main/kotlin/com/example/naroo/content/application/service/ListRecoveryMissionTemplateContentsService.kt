@@ -21,6 +21,7 @@ class ListRecoveryMissionTemplateContentsService(
             prompt = prompt,
             hints = hints,
             estimatedMinutes = estimatedMinutes,
+            status = status.name,
         )
     }
 }

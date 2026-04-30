@@ -4,6 +4,7 @@ import com.example.naroo.diagnostic.domain.DiagnosticQuestion
 import com.example.naroo.diagnostic.domain.DiagnosticQuestionChoice
 import com.example.naroo.diagnostic.domain.DiagnosticQuestionChoiceId
 import com.example.naroo.diagnostic.domain.DiagnosticQuestionId
+import com.example.naroo.diagnostic.domain.DiagnosticQuestionStatus
 import com.example.naroo.diagnostic.domain.MathArea
 import com.example.naroo.diagnostic.port.`out`.DiagnosticQuestionRepositoryPort
 import jakarta.persistence.Column
@@ -20,8 +21,13 @@ class JpaDiagnosticQuestionPersistenceAdapter(
     private val questionRepository: SpringDataDiagnosticQuestionJpaRepository,
     private val choiceRepository: SpringDataDiagnosticQuestionChoiceJpaRepository,
 ) : DiagnosticQuestionRepositoryPort {
-    override fun findByMathArea(mathArea: MathArea): List<DiagnosticQuestion> {
-        return toDomain(questionRepository.findByMathAreaOrderByDisplayOrderAsc(mathArea))
+    override fun findActiveByMathArea(mathArea: MathArea): List<DiagnosticQuestion> {
+        return toDomain(
+            questionRepository.findByMathAreaAndStatusOrderByDisplayOrderAsc(
+                mathArea,
+                DiagnosticQuestionStatus.ACTIVE,
+            ),
+        )
     }
 
     override fun findAll(): List<DiagnosticQuestion> {
@@ -44,7 +50,11 @@ class JpaDiagnosticQuestionPersistenceAdapter(
 }
 
 interface SpringDataDiagnosticQuestionJpaRepository : JpaRepository<DiagnosticQuestionJpaEntity, String> {
-    fun findByMathAreaOrderByDisplayOrderAsc(mathArea: MathArea): List<DiagnosticQuestionJpaEntity>
+    fun findByMathAreaAndStatusOrderByDisplayOrderAsc(
+        mathArea: MathArea,
+        status: DiagnosticQuestionStatus,
+    ): List<DiagnosticQuestionJpaEntity>
+
     fun findAllByOrderByMathAreaAscDisplayOrderAsc(): List<DiagnosticQuestionJpaEntity>
 }
 
@@ -74,6 +84,10 @@ class DiagnosticQuestionJpaEntity(
 
     @Column(name = "display_order", nullable = false)
     var displayOrder: Int = 0,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 32)
+    var status: DiagnosticQuestionStatus = DiagnosticQuestionStatus.ACTIVE,
 ) {
     fun toDomain(choices: List<DiagnosticQuestionChoiceJpaEntity>): DiagnosticQuestion {
         return DiagnosticQuestion(
@@ -84,6 +98,7 @@ class DiagnosticQuestionJpaEntity(
             correctChoiceId = DiagnosticQuestionChoiceId(correctChoiceId),
             conceptTag = conceptTag,
             displayOrder = displayOrder,
+            status = status,
         )
     }
 }

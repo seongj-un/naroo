@@ -45,6 +45,7 @@ data class DiagnosticQuestionContentResponse(
     val correctChoiceId: String,
     val conceptTag: String,
     val displayOrder: Int,
+    val status: String,
     val choices: List<DiagnosticQuestionChoiceContentResponse>,
 )
 
@@ -63,6 +64,7 @@ data class RecoveryMissionTemplateContentResponse(
     val prompt: String,
     val hints: List<String>,
     val estimatedMinutes: Int,
+    val status: String,
 )
 
 private fun DiagnosticQuestionContentResult.toResponse(): DiagnosticQuestionContentResponse {
@@ -73,6 +75,7 @@ private fun DiagnosticQuestionContentResult.toResponse(): DiagnosticQuestionCont
         correctChoiceId = correctChoiceId,
         conceptTag = conceptTag,
         displayOrder = displayOrder,
+        status = status,
         choices = choices.map(DiagnosticQuestionChoiceContentResult::toResponse),
     )
 }
@@ -91,5 +94,6 @@ private fun RecoveryMissionTemplateContentResult.toResponse(): RecoveryMissionTe
         prompt = prompt,
         hints = hints,
         estimatedMinutes = estimatedMinutes,
+        status = status,
     )
 }

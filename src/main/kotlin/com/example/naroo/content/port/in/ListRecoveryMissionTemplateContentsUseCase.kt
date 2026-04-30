@@ -10,4 +10,5 @@ data class RecoveryMissionTemplateContentResult(
     val prompt: String,
     val hints: List<String>,
     val estimatedMinutes: Int,
+    val status: String,
 )

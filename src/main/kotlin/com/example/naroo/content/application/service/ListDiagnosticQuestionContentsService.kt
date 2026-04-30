@@ -23,6 +23,7 @@ class ListDiagnosticQuestionContentsService(
             correctChoiceId = correctChoiceId.value,
             conceptTag = conceptTag,
             displayOrder = displayOrder,
+            status = status.name,
             choices = choices.map {
                 DiagnosticQuestionChoiceContentResult(
                     id = it.id.value,

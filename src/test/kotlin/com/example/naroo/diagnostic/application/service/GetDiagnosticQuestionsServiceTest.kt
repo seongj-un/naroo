@@ -144,7 +144,7 @@ class GetDiagnosticQuestionsServiceTest {
 private class FakeDiagnosticQuestionRepository(
     private val questions: List<DiagnosticQuestion>,
 ) : DiagnosticQuestionRepositoryPort {
-    override fun findByMathArea(mathArea: MathArea): List<DiagnosticQuestion> {
+    override fun findActiveByMathArea(mathArea: MathArea): List<DiagnosticQuestion> {
         return questions.filter { it.mathArea == mathArea }.sortedBy { it.displayOrder }
     }
 

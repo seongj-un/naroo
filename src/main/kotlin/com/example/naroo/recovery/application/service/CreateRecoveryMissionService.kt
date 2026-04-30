@@ -44,7 +44,7 @@ class CreateRecoveryMissionService(
         val nextConcept = result.nextRecoveryConceptAfter(existingMissions.map { it.conceptTag }.toSet())
             ?: return existingMissions.lastOrNull()?.toResult()
                 ?: throw RecoveryMissionException.DiagnosticResultRequired
-        val template = recoveryMissionTemplateRepositoryPort.findByConceptTag(nextConcept)
+        val template = recoveryMissionTemplateRepositoryPort.findActiveByConceptTag(nextConcept)
             ?: throw RecoveryMissionException.RecoveryMissionTemplateNotFound
         val now = Instant.now(clock)
         val mission = RecoveryMission(

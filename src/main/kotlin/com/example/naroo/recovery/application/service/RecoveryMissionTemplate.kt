@@ -6,4 +6,10 @@ data class RecoveryMissionTemplate(
     val prompt: String,
     val hints: List<String>,
     val estimatedMinutes: Int = 10,
+    val status: RecoveryMissionTemplateStatus = RecoveryMissionTemplateStatus.ACTIVE,
 )
+
+enum class RecoveryMissionTemplateStatus {
+    ACTIVE,
+    INACTIVE,
+}

@@ -13,6 +13,7 @@ data class DiagnosticQuestionContentResult(
     val correctChoiceId: String,
     val conceptTag: String,
     val displayOrder: Int,
+    val status: String,
     val choices: List<DiagnosticQuestionChoiceContentResult>,
 )
 

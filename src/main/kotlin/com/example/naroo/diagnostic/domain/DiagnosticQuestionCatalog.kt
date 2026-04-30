@@ -8,6 +8,7 @@ data class DiagnosticQuestion(
     val correctChoiceId: DiagnosticQuestionChoiceId,
     val conceptTag: String,
     val displayOrder: Int,
+    val status: DiagnosticQuestionStatus = DiagnosticQuestionStatus.ACTIVE,
 )
 
 @JvmInline
@@ -27,4 +28,9 @@ value class DiagnosticQuestionChoiceId(val value: String) {
     init {
         require(value.isNotBlank()) { "diagnosticQuestionChoiceId must not be blank" }
     }
+}
+
+enum class DiagnosticQuestionStatus {
+    ACTIVE,
+    INACTIVE,
 }

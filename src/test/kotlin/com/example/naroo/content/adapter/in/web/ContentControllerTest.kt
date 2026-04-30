@@ -22,6 +22,7 @@ class ContentControllerTest {
                         correctChoiceId = "a",
                         conceptTag = "linear_function_slope",
                         displayOrder = 1,
+                        status = "ACTIVE",
                         choices = listOf(DiagnosticQuestionChoiceContentResult("a", "-3")),
                     ),
                 )
@@ -51,6 +52,7 @@ class ContentControllerTest {
                         prompt = "기울기를 찾는 연습만 해요.",
                         hints = listOf("x 앞에 붙은 숫자를 먼저 찾아봐요."),
                         estimatedMinutes = 10,
+                        status = "ACTIVE",
                     ),
                 )
             },
