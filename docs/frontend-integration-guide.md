@@ -152,6 +152,381 @@ await fetch(`${API_BASE_URL}/api/auth/reissue`, {
 - 프론트는 JWT payload를 직접 디코딩하지 않는다.
 - 관리자 화면 접근 판단은 `role === "ADMIN"` 기준으로 한다.
 
+## API Client/Auth Flow 구성
+
+프론트 프로젝트를 만들면 아래 구조부터 잡는 것을 권장한다. React/Vite 기준 이름이지만 Next.js나 다른 프레임워크에서도 역할은 동일하게 가져가면 된다.
+
+```text
+src/
+  api/
+    types.ts
+    client.ts
+    auth.ts
+    learning.ts
+    diagnostics.ts
+    recoveryMissions.ts
+    contents.ts
+  auth/
+    authStore.ts
+    authFlow.ts
+  routes/
+    routeGuards.ts
+```
+
+환경변수:
+
+```env
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+Next.js를 쓰면 `NEXT_PUBLIC_API_BASE_URL`처럼 클라이언트에서 읽을 수 있는 이름을 사용한다.
+
+### 공통 타입
+
+`src/api/types.ts`:
+
+```ts
+export type ApiSuccess<T> = {
+  success: true;
+  data: T;
+};
+
+export type ApiFailure = {
+  success: false;
+  data: {
+    errorCode: string;
+  };
+};
+
+export type ApiWrapped<T> = ApiSuccess<T> | ApiFailure;
+
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly errorCode: string,
+  ) {
+    super(errorCode);
+  }
+}
+```
+
+### Token store
+
+access token은 JS 메모리에 둔다. refresh token은 HttpOnly cookie라서 JS에서 읽거나 저장하지 않는다.
+
+```ts
+let accessToken: string | null = null;
+
+export function getAccessToken() {
+  return accessToken;
+}
+
+export function setAccessToken(token: string | null) {
+  accessToken = token;
+}
+
+export function clearAccessToken() {
+  accessToken = null;
+}
+```
+
+localStorage에 access token을 저장하면 새로고침 복구는 쉽지만 XSS에 약해진다. 현재 백엔드는 refresh cookie를 제공하므로, 새로고침 시 `/api/auth/reissue`로 access token을 복구하는 방식이 더 낫다.
+
+### Fetch wrapper
+
+모든 API는 wrapper 응답을 쓰므로 `success`를 반드시 확인한다. 인증 API가 401을 반환하면 한 번만 refresh를 시도하고, refresh도 실패하면 로그인 화면으로 보낸다.
+
+```ts
+import { ApiError } from "./types";
+import { getAccessToken, setAccessToken, clearAccessToken } from "../auth/authStore";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+
+type RequestOptions = Omit<RequestInit, "headers"> & {
+  headers?: Record<string, string>;
+  auth?: boolean;
+  retryOnUnauthorized?: boolean;
+};
+
+export async function apiRequest<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
+  const { auth = true, retryOnUnauthorized = true, headers, ...requestInit } = options;
+  const token = getAccessToken();
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...requestInit,
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(auth && token ? { Authorization: `Bearer ${token}` } : {}),
+      ...headers,
+    },
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (response.status === 401 && auth && retryOnUnauthorized) {
+    const refreshed = await reissueAccessToken();
+    if (refreshed) {
+      return apiRequest<T>(path, {
+        ...options,
+        retryOnUnauthorized: false,
+      });
+    }
+  }
+
+  if (!response.ok || !payload?.success) {
+    const errorCode = payload?.data?.errorCode ?? `HTTP_${response.status}`;
+    throw new ApiError(response.status, errorCode);
+  }
+
+  return payload.data as T;
+}
+
+async function reissueAccessToken(): Promise<boolean> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/reissue`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload?.success) {
+    clearAccessToken();
+    return false;
+  }
+
+  setAccessToken(payload.data.accessToken);
+  return true;
+}
+```
+
+주의:
+
+- `credentials: "include"`는 refresh cookie 재발급 때문에 기본으로 켜둔다.
+- CORS allowed origin에 현재 프론트 origin이 없으면 cookie 포함 요청이 실패한다.
+- refresh 실패 시 access token은 반드시 제거한다.
+
+### Auth API module
+
+```ts
+import { apiRequest } from "./client";
+import { setAccessToken, clearAccessToken } from "../auth/authStore";
+
+export type UserRole = "STUDENT" | "ADMIN";
+
+export type LoginUser = {
+  id: string;
+  loginId: string;
+  email: string;
+  emailVerified: boolean;
+  nickname: string;
+  mathStatus: "FOLLOWS_CLASS" | "BARELY_FOLLOWS" | "MOSTLY_GAVE_UP" | "UNKNOWN";
+  role: UserRole;
+};
+
+export async function login(loginId: string, password: string) {
+  const data = await apiRequest<{
+    accessToken: string;
+    tokenType: "Bearer";
+    expiresAt: string;
+    user: LoginUser;
+  }>("/api/auth/login", {
+    method: "POST",
+    auth: false,
+    body: JSON.stringify({ loginId, password }),
+  });
+
+  setAccessToken(data.accessToken);
+  return data.user;
+}
+
+export async function signUp(input: {
+  loginId: string;
+  email: string;
+  password: string;
+  nickname: string;
+  mathStatus?: LoginUser["mathStatus"];
+}) {
+  return apiRequest("/api/auth/sign-up", {
+    method: "POST",
+    auth: false,
+    body: JSON.stringify(input),
+  });
+}
+
+export async function verifyEmail(token: string) {
+  return apiRequest("/api/auth/email/verify", {
+    method: "POST",
+    auth: false,
+    body: JSON.stringify({ token }),
+  });
+}
+
+export async function getMe() {
+  return apiRequest<{
+    id: string;
+    loginId: string;
+    emailVerified: boolean;
+    nickname: string;
+    role: UserRole;
+  }>("/api/auth/me");
+}
+
+export function logoutClientOnly() {
+  clearAccessToken();
+}
+```
+
+현재 백엔드에는 logout API가 없다. 그래서 프론트 logout은 access token을 지우는 client-only logout이다. refresh cookie는 만료 전까지 브라우저에 남을 수 있으므로, 운영 logout이 필요해지면 백엔드 logout API를 추가하는 것이 맞다.
+
+### App boot flow
+
+앱이 켜질 때는 아래 순서로 처리한다.
+
+1. `/api/auth/reissue` 시도
+2. 성공하면 access token 저장
+3. `GET /api/me/learning-home` 호출
+4. `nextAction`에 따라 라우팅
+5. reissue 실패 시 login/signup으로 이동
+
+```ts
+import { apiRequest } from "../api/client";
+import { ApiError } from "../api/types";
+
+export type LearningHome = {
+  user: {
+    id: string;
+    nickname: string;
+    emailVerified: boolean;
+  };
+  nextAction:
+    | "EMAIL_VERIFICATION_REQUIRED"
+    | "START_DIAGNOSTIC"
+    | "CREATE_RECOVERY_MISSION"
+    | "CONTINUE_RECOVERY_MISSION";
+  latestDiagnostic: null | {
+    diagnosticSessionId: string;
+    mathArea: string;
+    status: string;
+    totalQuestionCount: number;
+    correctCount: number;
+    wrongCount: number;
+    unknownCount: number;
+    weakLinks: string[];
+    primaryRecoveryConcept: string;
+    summary: string;
+    createdAt: string;
+  };
+  todayMission: null | {
+    id: string;
+    diagnosticSessionId: string;
+    conceptTag: string;
+    title: string;
+    status: string;
+    estimatedMinutes: number;
+    createdAt: string;
+    completedAt: string | null;
+  };
+  progress: {
+    completedMissionCount: number;
+    inProgressMissionCount: number;
+  };
+};
+
+export async function bootAuthAndHome() {
+  try {
+    const home = await apiRequest<LearningHome>("/api/me/learning-home");
+    return {
+      status: "authenticated" as const,
+      home,
+    };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      return {
+        status: "anonymous" as const,
+      };
+    }
+    throw error;
+  }
+}
+```
+
+위 예시는 `apiRequest`가 내부에서 reissue를 한 번 시도한다는 전제다.
+
+### Learning home route decision
+
+```ts
+export function resolveLearningRoute(home: LearningHome) {
+  switch (home.nextAction) {
+    case "EMAIL_VERIFICATION_REQUIRED":
+      return "/verify-email";
+    case "START_DIAGNOSTIC":
+      return "/diagnostics/start";
+    case "CREATE_RECOVERY_MISSION":
+      return "/diagnostics/result";
+    case "CONTINUE_RECOVERY_MISSION":
+      return home.todayMission
+        ? `/recovery-missions/${home.todayMission.id}`
+        : "/learning-home";
+  }
+}
+```
+
+`CREATE_RECOVERY_MISSION`일 때는 `latestDiagnostic.diagnosticSessionId`가 있으면 `POST /api/recovery-missions`의 body에 넣어 미션을 생성한다.
+
+### Route guard 기준
+
+```ts
+export function canEnterAdmin(user: { role: string } | null) {
+  return user?.role === "ADMIN";
+}
+
+export function canEnterVerifiedLearning(user: { emailVerified: boolean } | null) {
+  return user?.emailVerified === true;
+}
+```
+
+관리자 판단은 JWT 디코딩이 아니라 login/me 응답의 `role`만 사용한다.
+
+### API module 분리 기준
+
+```text
+api/auth.ts
+  signUp
+  login
+  verifyEmail
+  getMe
+
+api/learning.ts
+  getLearningHome
+
+api/diagnostics.ts
+  listMathAreas
+  selectStartingPoint
+  createDiagnosticSession
+  getDiagnosticQuestions
+  submitDiagnosticAnswers
+  getDiagnosticResult
+
+api/recoveryMissions.ts
+  createRecoveryMission
+  getRecoveryMission
+  submitRecoveryMission
+
+api/contents.ts
+  listDiagnosticQuestionContents
+  listRecoveryMissionTemplateContents
+  upsertDiagnosticQuestionContent
+  upsertRecoveryMissionTemplateContent
+```
+
+학생 화면에서는 `api/contents.ts`를 import하지 않는 것을 원칙으로 한다.
+
 ## 사용자 플로우
 
 프론트의 첫 화면 판단은 `GET /api/me/learning-home`을 기준으로 하는 것이 가장 단순하다.
