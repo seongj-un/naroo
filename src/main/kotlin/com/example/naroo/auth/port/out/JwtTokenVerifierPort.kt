@@ -10,4 +10,5 @@ data class VerifiedJwtToken(
     val loginId: String,
     val emailVerified: Boolean,
     val nickname: String,
+    val role: String,
 )

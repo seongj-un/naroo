@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -48,10 +47,9 @@ class ContentController(
     @PutMapping("/diagnostic-questions/{questionId}")
     fun upsertDiagnosticQuestion(
         @PathVariable questionId: String,
-        @RequestHeader(name = ADMIN_TOKEN_HEADER, required = false) adminToken: String?,
         @RequestBody request: UpsertDiagnosticQuestionContentRequest,
     ): APiWrappedResponseDto<DiagnosticQuestionContentResponse> {
-        contentAdminAuthorizer.verify(adminToken)
+        contentAdminAuthorizer.verify()
         val result = upsertDiagnosticQuestionContentUseCase.upsert(
             UpsertDiagnosticQuestionContentCommand(
                 id = questionId,
@@ -76,10 +74,9 @@ class ContentController(
     @PutMapping("/recovery-mission-templates/{conceptTag}")
     fun upsertRecoveryMissionTemplate(
         @PathVariable conceptTag: String,
-        @RequestHeader(name = ADMIN_TOKEN_HEADER, required = false) adminToken: String?,
         @RequestBody request: UpsertRecoveryMissionTemplateContentRequest,
     ): APiWrappedResponseDto<RecoveryMissionTemplateContentResponse> {
-        contentAdminAuthorizer.verify(adminToken)
+        contentAdminAuthorizer.verify()
         val result = upsertRecoveryMissionTemplateContentUseCase.upsert(
             UpsertRecoveryMissionTemplateContentCommand(
                 conceptTag = conceptTag,
@@ -94,9 +91,6 @@ class ContentController(
         return result.toResponse().toWrappedDto()
     }
 
-    companion object {
-        const val ADMIN_TOKEN_HEADER = "X-Naroo-Admin-Token"
-    }
 }
 
 data class DiagnosticQuestionContentsResponse(

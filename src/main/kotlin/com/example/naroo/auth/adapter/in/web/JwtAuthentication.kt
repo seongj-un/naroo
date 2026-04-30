@@ -6,6 +6,7 @@ data class JwtAuthentication(
     val loginId: String,
     val emailVerified: Boolean,
     val nickname: String,
+    val role: String,
 ) {
     companion object {
         fun current(): JwtAuthentication? {

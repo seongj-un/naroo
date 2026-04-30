@@ -31,6 +31,7 @@ class JwtAuthenticationFilter(
                             loginId = verifiedToken.loginId,
                             emailVerified = verifiedToken.emailVerified,
                             nickname = verifiedToken.nickname,
+                            role = verifiedToken.role,
                         )
                         SecurityContextHolder.getContext().authentication =
                             UsernamePasswordAuthenticationToken(authentication, null, emptyList())

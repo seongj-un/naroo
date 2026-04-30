@@ -11,6 +11,7 @@ data class UserAccount(
     val nickname: Nickname,
     val mathStatus: MathStatus,
     val createdAt: Instant,
+    val role: UserRole = UserRole.STUDENT,
 )
 
 @JvmInline
@@ -70,4 +71,9 @@ enum class MathStatus {
     BARELY_FOLLOWS,
     MOSTLY_GAVE_UP,
     UNKNOWN,
+}
+
+enum class UserRole {
+    STUDENT,
+    ADMIN,
 }

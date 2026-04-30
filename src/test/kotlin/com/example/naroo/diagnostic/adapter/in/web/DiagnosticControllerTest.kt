@@ -313,6 +313,7 @@ class DiagnosticControllerTest {
             loginId = "student01",
             emailVerified = emailVerified,
             nickname = "나루",
+            role = "STUDENT",
         )
         SecurityContextHolder.getContext().authentication =
             UsernamePasswordAuthenticationToken(authentication, null, emptyList())

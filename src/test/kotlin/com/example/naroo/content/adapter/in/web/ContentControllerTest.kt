@@ -1,5 +1,7 @@
 package com.example.naroo.content.adapter.`in`.web
 
+import com.example.naroo.auth.adapter.`in`.web.JwtAuthentication
+import com.example.naroo.auth.application.AuthException
 import com.example.naroo.content.port.`in`.DiagnosticQuestionChoiceContentResult
 import com.example.naroo.content.port.`in`.DiagnosticQuestionContentResult
 import com.example.naroo.content.port.`in`.ListDiagnosticQuestionContentsUseCase
@@ -10,10 +12,19 @@ import com.example.naroo.content.port.`in`.UpsertDiagnosticQuestionContentUseCas
 import com.example.naroo.content.port.`in`.UpsertRecoveryMissionTemplateContentCommand
 import com.example.naroo.content.port.`in`.UpsertRecoveryMissionTemplateContentUseCase
 import com.example.naroo.diagnostic.domain.MathArea
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
 
 class ContentControllerTest {
+    @AfterEach
+    fun clearSecurityContext() {
+        SecurityContextHolder.clearContext()
+    }
+
     @Test
     fun `lists diagnostic question contents`() {
         val controller = ContentController(
@@ -40,7 +51,7 @@ class ContentControllerTest {
             upsertRecoveryMissionTemplateContentUseCase = UpsertRecoveryMissionTemplateContentUseCase {
                 error("template should not be upserted")
             },
-            contentAdminAuthorizer = ContentAdminAuthorizer("admin-token"),
+            contentAdminAuthorizer = ContentAdminAuthorizer(),
         )
 
         val response = controller.listDiagnosticQuestions()
@@ -73,7 +84,7 @@ class ContentControllerTest {
             upsertRecoveryMissionTemplateContentUseCase = UpsertRecoveryMissionTemplateContentUseCase {
                 error("template should not be upserted")
             },
-            contentAdminAuthorizer = ContentAdminAuthorizer("admin-token"),
+            contentAdminAuthorizer = ContentAdminAuthorizer(),
         )
 
         val response = controller.listRecoveryMissionTemplates()
@@ -83,7 +94,7 @@ class ContentControllerTest {
     }
 
     @Test
-    fun `upserts diagnostic question with admin token`() {
+    fun `upserts diagnostic question with admin role`() {
         var capturedCommand: UpsertDiagnosticQuestionContentCommand? = null
         val controller = ContentController(
             listDiagnosticQuestionContentsUseCase = ListDiagnosticQuestionContentsUseCase {
@@ -108,12 +119,12 @@ class ContentControllerTest {
             upsertRecoveryMissionTemplateContentUseCase = UpsertRecoveryMissionTemplateContentUseCase {
                 error("template should not be upserted")
             },
-            contentAdminAuthorizer = ContentAdminAuthorizer("admin-token"),
+            contentAdminAuthorizer = ContentAdminAuthorizer(),
         )
+        authenticate(role = "ADMIN")
 
         val response = controller.upsertDiagnosticQuestion(
             questionId = "function-slope-2",
-            adminToken = "admin-token",
             request = UpsertDiagnosticQuestionContentRequest(
                 mathArea = MathArea.FUNCTION,
                 prompt = "기울기는?",
@@ -129,7 +140,7 @@ class ContentControllerTest {
     }
 
     @Test
-    fun `upserts recovery mission template with admin token`() {
+    fun `upserts recovery mission template with admin role`() {
         var capturedCommand: UpsertRecoveryMissionTemplateContentCommand? = null
         val controller = ContentController(
             listDiagnosticQuestionContentsUseCase = ListDiagnosticQuestionContentsUseCase {
@@ -152,12 +163,12 @@ class ContentControllerTest {
                     status = command.status,
                 )
             },
-            contentAdminAuthorizer = ContentAdminAuthorizer("admin-token"),
+            contentAdminAuthorizer = ContentAdminAuthorizer(),
         )
+        authenticate(role = "ADMIN")
 
         val response = controller.upsertRecoveryMissionTemplate(
             conceptTag = "linear_function_slope",
-            adminToken = "admin-token",
             request = UpsertRecoveryMissionTemplateContentRequest(
                 title = "기울기 복구",
                 prompt = "기울기만 찾아요.",
@@ -168,5 +179,50 @@ class ContentControllerTest {
 
         assertEquals("linear_function_slope", capturedCommand?.conceptTag)
         assertEquals("linear_function_slope", response.data?.conceptTag)
+    }
+
+    @Test
+    fun `rejects content upsert without admin role`() {
+        val controller = ContentController(
+            listDiagnosticQuestionContentsUseCase = ListDiagnosticQuestionContentsUseCase {
+                error("questions should not be listed")
+            },
+            listRecoveryMissionTemplateContentsUseCase = ListRecoveryMissionTemplateContentsUseCase {
+                error("templates should not be listed")
+            },
+            upsertDiagnosticQuestionContentUseCase = UpsertDiagnosticQuestionContentUseCase {
+                error("question should not be upserted")
+            },
+            upsertRecoveryMissionTemplateContentUseCase = UpsertRecoveryMissionTemplateContentUseCase {
+                error("template should not be upserted")
+            },
+            contentAdminAuthorizer = ContentAdminAuthorizer(),
+        )
+        authenticate(role = "STUDENT")
+
+        assertThrows(AuthException.Unauthorized::class.java) {
+            controller.upsertRecoveryMissionTemplate(
+                conceptTag = "linear_function_slope",
+                request = UpsertRecoveryMissionTemplateContentRequest(
+                    title = "기울기 복구",
+                    prompt = "기울기만 찾아요.",
+                    hints = listOf("x 앞 숫자를 봐요."),
+                    estimatedMinutes = 8,
+                ),
+            )
+        }
+    }
+
+    private fun authenticate(role: String) {
+        val authentication = JwtAuthentication(
+            tokenId = "token-1",
+            userId = "user-1",
+            loginId = "student01",
+            emailVerified = true,
+            nickname = "나루",
+            role = role,
+        )
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(authentication, null, emptyList())
     }
 }

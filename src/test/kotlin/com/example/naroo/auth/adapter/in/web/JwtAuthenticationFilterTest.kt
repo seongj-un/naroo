@@ -27,6 +27,7 @@ class JwtAuthenticationFilterTest {
                     loginId = "student01",
                     emailVerified = false,
                     nickname = "나루",
+                    role = "STUDENT",
                 )
             },
             tokenStorePort = FakeTokenStore("token-1" to "user-1"),

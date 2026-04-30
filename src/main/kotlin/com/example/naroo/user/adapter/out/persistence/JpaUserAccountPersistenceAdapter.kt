@@ -7,6 +7,7 @@ import com.example.naroo.user.domain.Nickname
 import com.example.naroo.user.domain.PasswordHash
 import com.example.naroo.user.domain.UserAccount
 import com.example.naroo.user.domain.UserId
+import com.example.naroo.user.domain.UserRole
 import com.example.naroo.user.port.`out`.DuplicateUserAccountException
 import com.example.naroo.user.port.`out`.UserAccountRepositoryPort
 import jakarta.persistence.Column
@@ -81,6 +82,10 @@ class UserAccountJpaEntity(
     @Column(name = "math_status", nullable = false, length = 32)
     var mathStatus: MathStatus = MathStatus.UNKNOWN,
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 32)
+    var role: UserRole = UserRole.STUDENT,
+
     @Column(name = "created_at", nullable = false, columnDefinition = "datetime(6)")
     var createdAt: Instant = Instant.EPOCH,
 ) {
@@ -93,6 +98,7 @@ class UserAccountJpaEntity(
             passwordHash = PasswordHash(passwordHash),
             nickname = Nickname.from(nickname),
             mathStatus = mathStatus,
+            role = role,
             createdAt = createdAt,
         )
     }
@@ -107,6 +113,7 @@ class UserAccountJpaEntity(
                 passwordHash = userAccount.passwordHash.value,
                 nickname = userAccount.nickname.value,
                 mathStatus = userAccount.mathStatus,
+                role = userAccount.role,
                 createdAt = userAccount.createdAt,
             )
         }
