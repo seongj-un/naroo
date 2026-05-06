@@ -140,17 +140,17 @@ Backend must verify:
 The frontend can now read API base URL from Dart define:
 
 ```bash
-flutter build web --dart-define=NAROO_API_BASE_URL=https://api.example.com
+flutter build web --dart-define=NAROO_API_BASE_URL=https://api.naroo.app
 ```
 
 Backend deployment must provide:
 
-- Public API URL
-- CORS allowed origin for frontend URL
+- Public API URL: `https://api.naroo.app`
+- CORS allowed origin for frontend URL: `https://naroo.app`
 - MySQL production/staging connection
 - Redis production/staging connection
 - JWT secret
-- Refresh cookie secure settings
+- Refresh cookie secure settings: `NAROO_AUTH_REFRESH_COOKIE_SECURE=true`
 
 ## Frontend Already Possible Now
 

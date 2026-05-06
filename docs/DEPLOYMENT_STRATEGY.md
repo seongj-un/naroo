@@ -21,13 +21,36 @@ Use a simple single-service deployment:
 
 ```text
 Student browser
-  -> HTTPS web app
+  -> HTTPS web app at https://naroo.app
+  -> HTTPS API at https://api.naroo.app
   -> Spring Boot app
   -> MySQL
   -> OAuth provider
 ```
 
 For beta, avoid Kubernetes, multi-service architecture, queues, or custom infrastructure.
+
+## Production Domains
+
+Use separate frontend and API origins for beta:
+
+- Frontend: `https://naroo.app`
+- Backend API: `https://api.naroo.app`
+
+Do not hard-code these URLs in source code. The frontend must receive the API URL at build time, and the backend must receive the allowed frontend origin through environment variables.
+
+Production frontend build:
+
+```bash
+flutter build web --dart-define=NAROO_API_BASE_URL=https://api.naroo.app
+```
+
+Production backend CORS/cookie settings:
+
+```text
+NAROO_AUTH_REFRESH_COOKIE_SECURE=true
+NAROO_CORS_ALLOWED_ORIGINS=https://naroo.app
+```
 
 ## Runtime Target
 
