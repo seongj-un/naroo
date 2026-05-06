@@ -106,8 +106,12 @@ class AuthControllerTest {
         assertEquals("student01@example.com", response.body?.data?.user?.email)
         assertEquals(false, response.body?.data?.user?.emailVerified)
         assertEquals("STUDENT", response.body?.data?.user?.role)
-        assertEquals(true, response.headers["Set-Cookie"]?.single()?.contains("refresh_token=refresh-token"))
-        assertEquals(true, response.headers["Set-Cookie"]?.single()?.contains("Secure"))
+        val cookie = response.headers["Set-Cookie"]?.single().orEmpty()
+        assertEquals(true, cookie.contains("refresh_token=refresh-token"))
+        assertEquals(true, cookie.contains("HttpOnly"))
+        assertEquals(true, cookie.contains("Secure"))
+        assertEquals(true, cookie.contains("SameSite=Strict"))
+        assertEquals(true, cookie.contains("Path=/api/auth"))
     }
 
     @Test
@@ -174,7 +178,12 @@ class AuthControllerTest {
         assertEquals("refresh-token", capturedCommand?.refreshToken)
         assertEquals("new-jwt-token", response.body?.data?.accessToken)
         assertEquals("Bearer", response.body?.data?.tokenType)
-        assertEquals(true, response.headers["Set-Cookie"]?.single()?.contains("refresh_token=new-refresh-token"))
+        val cookie = response.headers["Set-Cookie"]?.single().orEmpty()
+        assertEquals(true, cookie.contains("refresh_token=new-refresh-token"))
+        assertEquals(true, cookie.contains("HttpOnly"))
+        assertEquals(true, cookie.contains("Secure"))
+        assertEquals(true, cookie.contains("SameSite=Strict"))
+        assertEquals(true, cookie.contains("Path=/api/auth"))
     }
 
     @Test
