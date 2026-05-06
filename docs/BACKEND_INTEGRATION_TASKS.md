@@ -140,7 +140,7 @@ Backend must verify:
 The frontend can now read API base URL from Dart define:
 
 ```bash
-flutter build web --dart-define=NAROO_API_BASE_URL=https://api.naroo.app
+bash scripts/build-frontend-production.sh
 ```
 
 Backend deployment must provide:

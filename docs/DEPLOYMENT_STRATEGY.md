@@ -42,7 +42,7 @@ Do not hard-code these URLs in source code. The frontend must receive the API UR
 Production frontend build:
 
 ```bash
-flutter build web --dart-define=NAROO_API_BASE_URL=https://api.naroo.app
+bash scripts/build-frontend-production.sh
 ```
 
 Production backend CORS/cookie settings:
