@@ -52,6 +52,8 @@ NAROO_AUTH_REFRESH_COOKIE_SECURE=true
 NAROO_CORS_ALLOWED_ORIGINS=https://naroo.app
 ```
 
+Use [.env.production.example](../.env.production.example) as the deployment environment checklist.
+
 ## Runtime Target
 
 The hosted service must support:
