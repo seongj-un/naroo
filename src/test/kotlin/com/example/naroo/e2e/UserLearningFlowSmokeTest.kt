@@ -1,5 +1,7 @@
 package com.example.naroo.e2e
 
+import com.example.naroo.auth.port.`out`.EmailSenderPort
+import com.example.naroo.auth.port.`out`.EmailVerificationMessage
 import com.example.naroo.auth.port.`out`.StoredAccessToken
 import com.example.naroo.auth.port.`out`.StoredEmailVerificationToken
 import com.example.naroo.auth.port.`out`.StoredRefreshToken
@@ -29,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class UserLearningFlowSmokeTest(
     @Autowired private val jdbcTemplate: JdbcTemplate,
+    @Autowired private val emailSender: CapturingSmokeEmailSender,
     @LocalServerPort private val port: Int,
 ) {
     private val httpClient = HttpClient.newHttpClient()
@@ -45,6 +48,7 @@ class UserLearningFlowSmokeTest(
         jdbcTemplate.update("delete from diagnostic_sessions")
         jdbcTemplate.update("delete from diagnostic_starting_points")
         jdbcTemplate.update("delete from user_accounts")
+        emailSender.clear()
     }
 
     @Test
@@ -64,7 +68,12 @@ class UserLearningFlowSmokeTest(
         )
         assertEquals(HttpStatus.CREATED.value(), signUp.statusCode)
 
-        jdbcTemplate.update("update user_accounts set email_verified = true where login_id = ?", loginId)
+        val verification = post(
+            path = "/api/auth/email/verify",
+            body = mapOf("token" to emailSender.latestTokenFor("smoke@example.com")),
+        )
+        assertEquals(HttpStatus.OK.value(), verification.statusCode)
+        assertEquals(true, verification.body.dataMap()["emailVerified"])
 
         val login = post(
             path = "/api/auth/login",
@@ -77,6 +86,28 @@ class UserLearningFlowSmokeTest(
         val accessToken = login.body.dataMap().string("accessToken")
         assertTrue(accessToken.isNotBlank())
         assertEquals("STUDENT", login.body.dataMap().map("user").string("role"))
+        val refreshSetCookie = login.refreshSetCookie()
+        assertTrue(refreshSetCookie.contains("HttpOnly"))
+        assertTrue(refreshSetCookie.contains("Path=/api/auth"))
+        assertTrue(refreshSetCookie.contains("SameSite=Strict"))
+
+        val reissue = post(
+            path = "/api/auth/reissue",
+            body = emptyMap<String, Any>(),
+            cookie = login.refreshCookiePair(),
+        )
+        assertEquals(HttpStatus.OK.value(), reissue.statusCode)
+        val reissuedAccessToken = reissue.body.dataMap().string("accessToken")
+        assertTrue(reissuedAccessToken.isNotBlank())
+        assertTrue(reissue.refreshSetCookie().startsWith("refresh_token="))
+
+        val mathAreas = exchange(
+            path = "/api/math-areas",
+            method = HttpMethod.GET,
+            body = null,
+        )
+        assertEquals(HttpStatus.OK.value(), mathAreas.statusCode)
+        assertEquals(5, mathAreas.body.dataList().size)
 
         val startingPoint = post(
             path = "/api/diagnostics/starting-point",
@@ -85,14 +116,14 @@ class UserLearningFlowSmokeTest(
                 "mathArea" to "FUNCTION",
                 "note" to "함수가 어려워요",
             ),
-            accessToken = accessToken,
+            accessToken = reissuedAccessToken,
         )
         assertEquals(HttpStatus.CREATED.value(), startingPoint.statusCode)
 
         val diagnosticSession = post(
             path = "/api/diagnostics",
             body = emptyMap<String, Any>(),
-            accessToken = accessToken,
+            accessToken = reissuedAccessToken,
         )
         assertEquals(HttpStatus.CREATED.value(), diagnosticSession.statusCode)
         val diagnosticSessionId = diagnosticSession.body.dataMap().string("id")
@@ -101,7 +132,7 @@ class UserLearningFlowSmokeTest(
             path = "/api/diagnostics/$diagnosticSessionId/questions",
             method = HttpMethod.GET,
             body = null,
-            accessToken = accessToken,
+            accessToken = reissuedAccessToken,
         )
         assertEquals(HttpStatus.OK.value(), questions.statusCode)
         assertEquals(2, questions.body.dataMap().list("questions").size)
@@ -114,7 +145,7 @@ class UserLearningFlowSmokeTest(
                     mapOf("questionId" to "function-slope-1", "selectedChoiceId" to "unknown"),
                 ),
             ),
-            accessToken = accessToken,
+            accessToken = reissuedAccessToken,
         )
         assertEquals(HttpStatus.OK.value(), submittedAnswers.statusCode)
         assertEquals("linear_function_slope", submittedAnswers.body.dataMap().string("primaryRecoveryConcept"))
@@ -123,7 +154,7 @@ class UserLearningFlowSmokeTest(
             path = "/api/diagnostics/$diagnosticSessionId/result",
             method = HttpMethod.GET,
             body = null,
-            accessToken = accessToken,
+            accessToken = reissuedAccessToken,
         )
         assertEquals(HttpStatus.OK.value(), result.statusCode)
         assertNotNull(result.body.dataMap()["nextMissionPreview"])
@@ -131,7 +162,7 @@ class UserLearningFlowSmokeTest(
         val mission = post(
             path = "/api/recovery-missions",
             body = mapOf("diagnosticSessionId" to diagnosticSessionId),
-            accessToken = accessToken,
+            accessToken = reissuedAccessToken,
         )
         assertEquals(HttpStatus.CREATED.value(), mission.statusCode)
         val missionId = mission.body.dataMap().string("id")
@@ -139,7 +170,7 @@ class UserLearningFlowSmokeTest(
         val submission = post(
             path = "/api/recovery-missions/$missionId/submissions",
             body = mapOf("answerText" to "x 앞에 붙은 숫자를 보고 기울기가 -3이라는 것을 확인했습니다."),
-            accessToken = accessToken,
+            accessToken = reissuedAccessToken,
         )
         assertEquals(HttpStatus.CREATED.value(), submission.statusCode)
         assertEquals("COMPLETED", submission.body.dataMap().map("mission").string("status"))
@@ -148,7 +179,7 @@ class UserLearningFlowSmokeTest(
             path = "/api/me/learning-home",
             method = HttpMethod.GET,
             body = null,
-            accessToken = accessToken,
+            accessToken = reissuedAccessToken,
         )
         assertEquals(HttpStatus.OK.value(), home.statusCode)
         assertEquals("CREATE_RECOVERY_MISSION", home.body.dataMap().string("nextAction"))
@@ -196,7 +227,8 @@ class UserLearningFlowSmokeTest(
         path: String,
         body: Any,
         accessToken: String? = null,
-    ) = exchange(path, HttpMethod.POST, body, accessToken)
+        cookie: String? = null,
+    ) = exchange(path, HttpMethod.POST, body, accessToken, cookie)
 
     private fun put(
         path: String,
@@ -231,12 +263,16 @@ class UserLearningFlowSmokeTest(
         method: HttpMethod,
         body: Any?,
         accessToken: String? = null,
+        cookie: String? = null,
     ): SmokeResponse {
         val requestBuilder = HttpRequest.newBuilder()
             .uri(URI.create("http://localhost:$port$path"))
             .header("Content-Type", "application/json")
         if (!accessToken.isNullOrBlank()) {
             requestBuilder.header("Authorization", "Bearer $accessToken")
+        }
+        if (!cookie.isNullOrBlank()) {
+            requestBuilder.header("Cookie", cookie)
         }
         when (method) {
             HttpMethod.GET -> requestBuilder.GET()
@@ -257,12 +293,18 @@ class UserLearningFlowSmokeTest(
             } else {
                 objectMapper.readValue(response.body(), Map::class.java)
             },
+            setCookies = response.headers().allValues("Set-Cookie"),
         )
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun Map<*, *>.dataMap(): Map<String, Any?> {
         return this["data"] as Map<String, Any?>
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun Map<*, *>.dataList(): List<Any?> {
+        return this["data"] as List<Any?>
     }
 
     private fun Map<String, Any?>.map(key: String): Map<String, Any?> {
@@ -290,13 +332,44 @@ class UserLearningFlowSmokeTest(
         fun smokeTokenStorePort(): TokenStorePort {
             return InMemorySmokeTokenStore()
         }
+
+        @Bean
+        @Primary
+        fun smokeEmailSenderPort(): CapturingSmokeEmailSender {
+            return CapturingSmokeEmailSender()
+        }
     }
 }
 
 private data class SmokeResponse(
     val statusCode: Int,
     val body: Map<*, *>,
-)
+    val setCookies: List<String>,
+) {
+    fun refreshSetCookie(): String {
+        return setCookies.first { it.startsWith("refresh_token=") }
+    }
+
+    fun refreshCookiePair(): String {
+        return refreshSetCookie().substringBefore(";")
+    }
+}
+
+class CapturingSmokeEmailSender : EmailSenderPort {
+    private val messages = ConcurrentHashMap<String, EmailVerificationMessage>()
+
+    override fun sendEmailVerification(message: EmailVerificationMessage) {
+        messages[message.email] = message
+    }
+
+    fun latestTokenFor(email: String): String {
+        return messages[email]?.token ?: error("email verification token not captured for $email")
+    }
+
+    fun clear() {
+        messages.clear()
+    }
+}
 
 private class InMemorySmokeTokenStore : TokenStorePort {
     private val accessTokens = ConcurrentHashMap<String, String>()
