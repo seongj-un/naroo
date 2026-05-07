@@ -17,7 +17,8 @@ Last updated: 2026-04-30
 
 2. **refresh token cookie**
    - 로그인/재발급 응답은 `refresh_token` 쿠키를 내려준다.
-   - 쿠키 옵션은 `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/api/auth`이다.
+   - 쿠키 옵션은 `HttpOnly`, `Secure`, `Path=/api/auth`이다.
+   - `SameSite` 기본값은 `Strict`이며, 필요하면 `NAROO_AUTH_REFRESH_COOKIE_SAME_SITE=None`으로 바꿀 수 있다.
    - 운영 기본값은 `Secure=true`이다.
    - 로컬 HTTP 개발에서는 `NAROO_AUTH_REFRESH_COOKIE_SECURE=false`로 실행한다.
 
@@ -69,6 +70,7 @@ Environment variables:
 - `NAROO_REDIS_PORT`
 - `NAROO_CORS_ALLOWED_ORIGINS`
 - `NAROO_AUTH_REFRESH_COOKIE_SECURE`
+- `NAROO_AUTH_REFRESH_COOKIE_SAME_SITE`
 - `NAROO_JWT_SECRET`
 - `NAROO_JWT_ACCESS_TOKEN_TTL_MINUTES`
 - `NAROO_JWT_REFRESH_TOKEN_TTL_DAYS`
@@ -126,6 +128,7 @@ Authorization: Bearer {accessToken}
 - refresh token: JS에서 접근하지 않음. 브라우저 cookie가 자동 처리해야 한다.
 - 재발급 API 호출 시 `credentials: "include"` 필요
 - 로컬 HTTP에서 refresh cookie를 검증하려면 백엔드 실행 환경에 `NAROO_AUTH_REFRESH_COOKIE_SECURE=false` 필요
+- 프론트와 백엔드가 서로 다른 사이트로 배포되면 `NAROO_AUTH_REFRESH_COOKIE_SAME_SITE=None`이 필요할 수 있다.
 
 Example fetch:
 
