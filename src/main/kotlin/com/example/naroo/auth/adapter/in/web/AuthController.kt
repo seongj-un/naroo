@@ -34,7 +34,11 @@ class AuthController(
     private val verifyEmailUseCase: VerifyEmailUseCase,
     @Value("\${naroo.auth.refresh-cookie-secure:true}")
     private val refreshCookieSecure: Boolean = true,
+    @Value("\${naroo.auth.refresh-cookie-same-site:Strict}")
+    refreshCookieSameSite: String = "Strict",
 ) {
+    private val validatedRefreshCookieSameSite = normalizeSameSite(refreshCookieSameSite)
+
     @PostMapping("/sign-up")
     fun signUp(@RequestBody request: SignUpUserRequest): ResponseEntity<APiWrappedResponseDto<SignUpUserResponse>> {
         val result = signUpUserUseCase.signUp(
@@ -139,10 +143,21 @@ class AuthController(
         return ResponseCookie.from(REFRESH_TOKEN_COOKIE, refreshToken)
             .httpOnly(true)
             .secure(refreshCookieSecure)
-            .sameSite("Strict")
+            .sameSite(validatedRefreshCookieSameSite)
             .path("/api/auth")
             .maxAge(java.time.Duration.between(Instant.now(), expiresAt).coerceAtLeast(java.time.Duration.ZERO))
             .build()
+    }
+
+    private fun normalizeSameSite(value: String): String {
+        return when (value.trim().lowercase()) {
+            "strict" -> "Strict"
+            "lax" -> "Lax"
+            "none" -> "None"
+            else -> throw IllegalArgumentException(
+                "naroo.auth.refresh-cookie-same-site must be one of Strict, Lax, None",
+            )
+        }
     }
 
     companion object {

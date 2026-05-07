@@ -1,15 +1,20 @@
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+
 spring:
   application:
     name: naroo
   datasource:
-    url: ${MYSQL_URL:${NAROO_DATABASE_URL:jdbc:mysql://localhost:3306/naroo?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false}}
-    username: ${MYSQL_USER:${NAROO_DATABASE_USERNAME:naroo}}
-    password: ${MYSQL_PASS:${NAROO_DATABASE_PASSWORD:naroo}}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${MYSQL_URL:${NAROO_DATABASE_URL:jdbc:mysql://${MYSQLHOST:${NAROO_DATABASE_HOST:localhost}}:${MYSQLPORT:${NAROO_DATABASE_PORT:3306}}/${MYSQLDATABASE:${NAROO_DATABASE_NAME:naroo}}?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=${MYSQL_SSL_ENABLED:${NAROO_DATABASE_SSL_ENABLED:false}}}}
+    username: ${MYSQL_USER:${NAROO_DATABASE_USERNAME:${MYSQLUSER:naroo}}}
+    password: ${MYSQL_PASS:${NAROO_DATABASE_PASSWORD:${MYSQLPASSWORD:naroo}}}
   data:
     redis:
-      host: ${NAROO_REDIS_HOST:localhost}
-      port: ${NAROO_REDIS_PORT:6379}
+      host: ${NAROO_REDIS_HOST:${REDISHOST:localhost}}
+      port: ${NAROO_REDIS_PORT:${REDISPORT:6379}}
+      username: ${NAROO_REDIS_USERNAME:${REDISUSER:}}
+      password: ${NAROO_REDIS_PASSWORD:${REDISPASSWORD:}}
   flyway:
     enabled: true
   jpa:
@@ -21,6 +26,7 @@ naroo:
   auth:
     email-verification-token-ttl-minutes: ${NAROO_AUTH_EMAIL_VERIFICATION_TOKEN_TTL_MINUTES:30}
     refresh-cookie-secure: ${NAROO_AUTH_REFRESH_COOKIE_SECURE:true}
+    refresh-cookie-same-site: ${NAROO_AUTH_REFRESH_COOKIE_SAME_SITE:Strict}
   cors:
     allowed-origins: ${NAROO_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
   jwt:
@@ -35,3 +41,12 @@ naroo:
       password: ${NAROO_SEED_STUDENT_PASSWORD:password123}
       nickname: ${NAROO_SEED_STUDENT_NICKNAME:나루}
       math-status: ${NAROO_SEED_STUDENT_MATH_STATUS:UNKNOWN}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
