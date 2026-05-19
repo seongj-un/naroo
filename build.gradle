@@ -10,9 +10,8 @@ version = '0.0.1-SNAPSHOT'
 description = 'naroo'
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 repositories {
@@ -40,6 +39,7 @@ dependencies {
 
 kotlin {
     compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
         freeCompilerArgs.addAll '-Xjsr305=strict', '-Xannotation-default-target=param-property'
     }
 }
