@@ -1,6 +1,6 @@
 # Backend Integration Tasks
 
-Last updated: 2026-05-06
+Last updated: 2026-05-19
 
 This is the remaining checklist before Naroo can be treated as beta-ready. The frontend already has API repository wiring for auth, learning home, diagnostics, and recovery missions. The next work is not more mock UI. The next work is proving the real backend flow with real content.
 
@@ -123,6 +123,9 @@ nickname: 나루
 mathStatus: UNKNOWN
 ```
 
+For Railway production QA, do not leave the public default credentials enabled.
+Use the same seed path, but override `NAROO_SEED_STUDENT_LOGIN_ID`, `NAROO_SEED_STUDENT_EMAIL`, and `NAROO_SEED_STUDENT_PASSWORD` with random values.
+
 ### 5. Verify refresh cookie behavior
 
 The frontend stores access token in memory and expects refresh token as an HttpOnly cookie.
@@ -130,6 +133,7 @@ The frontend stores access token in memory and expects refresh token as an HttpO
 Backend must verify:
 
 - Login sets `refresh_token` cookie.
+- Cross-site web deployments use `SameSite=None; Secure` when frontend and backend are on different sites.
 - `/api/auth/reissue` works with credentials included.
 - Local HTTP uses `NAROO_AUTH_REFRESH_COOKIE_SECURE=false`.
 - Production uses secure cookie settings.
@@ -145,12 +149,13 @@ bash scripts/build-frontend-production.sh
 
 Backend deployment must provide:
 
-- Public API URL: `https://api.naroo.app`
+- Public API URL: `https://backend-production-688a6.up.railway.app` for the current Railway deployment
 - CORS allowed origin for frontend URL: `https://naroo.app`
 - MySQL production/staging connection
 - Redis production/staging connection
 - JWT secret
 - Refresh cookie secure settings: `NAROO_AUTH_REFRESH_COOKIE_SECURE=true`
+- Refresh cookie same-site settings: `NAROO_AUTH_REFRESH_COOKIE_SAME_SITE=None` while the backend stays on the Railway domain
 
 ## Frontend Already Possible Now
 

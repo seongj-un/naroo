@@ -1,6 +1,6 @@
 # Naroo Backend Railway Deploy
 
-Last updated: 2026-05-06
+Last updated: 2026-05-19
 
 이 문서는 현재 `naroo` 백엔드 코드 기준으로 Railway 첫 배포에 필요한 최소 조건만 정리한다. 추측성 설정은 넣지 않고, 실제 코드가 읽는 값과 이번 저장소 변경만 다룬다.
 
@@ -63,7 +63,7 @@ Actuator로 간다.
 ### 보통 직접 설정하는 값
 
 - `NAROO_AUTH_REFRESH_COOKIE_SECURE=true`
-- `NAROO_AUTH_REFRESH_COOKIE_SAME_SITE=Strict`
+- `NAROO_AUTH_REFRESH_COOKIE_SAME_SITE=None`
 - `NAROO_JWT_ACCESS_TOKEN_TTL_MINUTES=60`
 - `NAROO_JWT_REFRESH_TOKEN_TTL_DAYS=3`
 - `NAROO_AUTH_EMAIL_VERIFICATION_TOKEN_TTL_MINUTES=30`
@@ -91,6 +91,7 @@ Actuator로 간다.
 
 - 코드 fallback은 `MYSQL_URL` 우선이다.
 - `MYSQL_URL`이 없으면 `MYSQLHOST`/`MYSQLPORT`/`MYSQLDATABASE` 조합으로 JDBC URL을 만든다.
+- Railway의 MySQL reference variable은 raw URL일 수 있다. Spring datasource에는 `jdbc:`로 시작하는 값이 필요하므로, raw URL을 `MYSQL_URL`에 그대로 넣지 말고 `MYSQLHOST`/`MYSQLPORT`/`MYSQLDATABASE` 조합을 쓰는 편이 안전하다.
 
 ### Redis 연결 값
 
@@ -116,12 +117,13 @@ Actuator로 간다.
 - `HttpOnly`
 - `Secure=true`
 - `Path=/api/auth`
-- `SameSite=Strict`
+- `SameSite=None` if frontend stays on `https://naroo.app` and backend stays on a Railway-provided domain
 
 선택 기준:
 
 - 프론트와 백엔드가 같은 사이트(`naroo.app`, `api.naroo.app`)면 `Strict` 유지
 - 프론트와 백엔드가 서로 다른 사이트면 `NAROO_AUTH_REFRESH_COOKIE_SAME_SITE=None`으로 바꾸고 `Secure=true` 유지
+- 현재 배포 URL이 `https://backend-production-688a6.up.railway.app` 이므로 `https://naroo.app` 프론트와는 cross-site다. 이 조합에서는 `None`이 맞다.
 
 프론트가 cross-site 요청에서 refresh cookie를 써야 하면 `fetch(..., { credentials: "include" })`가 필요하다.
 
@@ -135,7 +137,7 @@ Actuator로 간다.
    - `SPRING_PROFILES_ACTIVE=prod`
    - `NAROO_JWT_SECRET=<32바이트 이상 랜덤 문자열>`
    - `NAROO_CORS_ALLOWED_ORIGINS=https://<frontend-domain>`
-   - 필요 시 `NAROO_AUTH_REFRESH_COOKIE_SAME_SITE=None`
+   - Railway 기본 도메인을 쓰면 `NAROO_AUTH_REFRESH_COOKIE_SAME_SITE=None`
 6. Railway가 MySQL/Redis reference vars를 backend에 연결했는지 확인
 7. GitHub repo 연결 후 deploy
 8. healthcheck path가 `/actuator/health`로 잡히는지 확인
@@ -156,6 +158,7 @@ curl https://<backend-domain>/actuator/health
 
 - `POST /api/auth/login` 성공
 - 응답에 `refresh_token` 쿠키 포함
+- `Set-Cookie`에 `SameSite=None; Secure` 포함
 - 프론트 origin에서 `POST /api/auth/reissue`가 cookie 포함으로 성공
 
 ## GitHub Actions
@@ -173,12 +176,17 @@ curl https://<backend-domain>/actuator/health
 
 - `RAILWAY_TOKEN`
 
+## 운영 QA 계정
+
+- 운영 Railway에서 QA를 빨리 진행해야 하면 seeded verified 학생 계정을 임시로 켤 수 있다.
+- 공개형 기본값 `student01/password123`를 운영에 그대로 두는 것은 피한다.
+- 대신 `NAROO_SEED_STUDENT_ENABLED=true`와 함께 랜덤 `NAROO_SEED_STUDENT_LOGIN_ID`, `NAROO_SEED_STUDENT_EMAIL`, `NAROO_SEED_STUDENT_PASSWORD`를 같이 넣는다.
+- 이 계정은 `emailVerified=true`로 생성되므로 이메일 수신함 없이 진단, recovery mission, learning home 플로우를 바로 검증할 수 있다.
+
 ## 남아 있는 블로커
 
-- 실제 Railway project와 backend service가 아직 만들어지지 않았다
-- 실제 frontend 배포 origin이 아직 확정되지 않았다
-  - 이 값이 확정되어야 `NAROO_CORS_ALLOWED_ORIGINS`와 `NAROO_AUTH_REFRESH_COOKIE_SAME_SITE`를 최종 결정할 수 있다
-- Railway 상의 MySQL/Redis reference vars가 실제로 연결되었는지는 이 저장소 안에서 검증할 수 없다
+- 실제 frontend 배포 origin이 바뀌면 `NAROO_CORS_ALLOWED_ORIGINS`와 `NAROO_AUTH_REFRESH_COOKIE_SAME_SITE`도 같이 재검토해야 한다
+- 최종 운영 구조는 `https://api.naroo.app` 같은 same-site 도메인으로 옮기는 편이 더 안전하다
 - 현재 로컬 환경에는 Docker가 없어서 MySQL/Redis 포함한 완전한 prod-like 부팅 검증은 못 했다
 
 ## 프론트 저장소에 넘길 값
@@ -192,5 +200,5 @@ NAROO_API_BASE_URL=https://<backend-domain>
 예시:
 
 ```text
-NAROO_API_BASE_URL=https://naroo-backend-production.up.railway.app
+NAROO_API_BASE_URL=https://backend-production-688a6.up.railway.app
 ```
