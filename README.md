@@ -91,3 +91,4 @@ docker compose down
 Deployment notes:
 
 - Railway backend deploy guide: [docs/RAILWAY_BACKEND_DEPLOY.md](/Users/seongjun/Desktop/project/naroo/docs/RAILWAY_BACKEND_DEPLOY.md)
+- Example Railway env file: [.env.railway.example](/Users/seongjun/Desktop/project/naroo/.env.railway.example)
