@@ -30,7 +30,7 @@ naroo:
   cors:
     allowed-origins: ${NAROO_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
   jwt:
-    secret: ${NAROO_JWT_SECRET:naroo-local-development-secret-32bytes}
+    secret: ${NAROO_JWT_SECRET}
     access-token-ttl-minutes: ${NAROO_JWT_ACCESS_TOKEN_TTL_MINUTES:60}
     refresh-token-ttl-days: ${NAROO_JWT_REFRESH_TOKEN_TTL_DAYS:3}
   seed:
