@@ -23,7 +23,14 @@ class GetLearningHomeService(
     override fun get(command: GetLearningHomeCommand): LearningHomeResult {
         val userId = UserId(command.userId)
         val latestDiagnostic = diagnosticResultRepositoryPort.findLatestByUserId(userId)
-        val todayMission = recoveryMissionRepositoryPort.findLatestInProgressByUserId(userId)
+        val missionsForLatestDiagnostic = latestDiagnostic?.let {
+            recoveryMissionRepositoryPort.findAllByUserIdAndDiagnosticSessionId(userId, it.diagnosticSessionId)
+        }.orEmpty()
+        val todayMission = missionsForLatestDiagnostic
+            .filter { it.status == RecoveryMissionStatus.IN_PROGRESS }
+            .maxByOrNull { it.createdAt }
+        val latestMission = missionsForLatestDiagnostic.maxByOrNull { it.createdAt }
+        val hasRemainingRecoveryMission = latestDiagnostic?.hasRemainingRecoveryMission(missionsForLatestDiagnostic) ?: false
         val progress = LearningHomeProgressResult(
             completedMissionCount = recoveryMissionRepositoryPort.countByUserIdAndStatus(
                 userId,
@@ -36,7 +43,13 @@ class GetLearningHomeService(
         )
 
         return LearningHomeResult(
-            nextAction = nextAction(command.emailVerified, latestDiagnostic != null, todayMission != null),
+            nextAction = nextAction(
+                emailVerified = command.emailVerified,
+                hasDiagnosticResult = latestDiagnostic != null,
+                hasInProgressMission = todayMission != null,
+                hasRemainingRecoveryMission = hasRemainingRecoveryMission,
+                hasCompletedRecoverySeries = latestMission?.status == RecoveryMissionStatus.COMPLETED,
+            ),
             latestDiagnostic = latestDiagnostic?.let {
                 LearningHomeDiagnosticResult(
                     diagnosticSessionId = it.diagnosticSessionId.value,
@@ -53,6 +66,7 @@ class GetLearningHomeService(
                 )
             },
             todayMission = todayMission?.toLearningHomeMissionResult(),
+            latestMission = latestMission?.toLearningHomeMissionResult(),
             progress = progress,
         )
     }
@@ -61,6 +75,8 @@ class GetLearningHomeService(
         emailVerified: Boolean,
         hasDiagnosticResult: Boolean,
         hasInProgressMission: Boolean,
+        hasRemainingRecoveryMission: Boolean,
+        hasCompletedRecoverySeries: Boolean,
     ): LearningHomeNextAction {
         if (!emailVerified) {
             return LearningHomeNextAction.EMAIL_VERIFICATION_REQUIRED
@@ -68,10 +84,36 @@ class GetLearningHomeService(
         if (hasInProgressMission) {
             return LearningHomeNextAction.CONTINUE_RECOVERY_MISSION
         }
+        if (hasRemainingRecoveryMission) {
+            return LearningHomeNextAction.CREATE_RECOVERY_MISSION
+        }
+        if (hasCompletedRecoverySeries) {
+            return LearningHomeNextAction.RECOVERY_SERIES_COMPLETED
+        }
         if (hasDiagnosticResult) {
             return LearningHomeNextAction.CREATE_RECOVERY_MISSION
         }
         return LearningHomeNextAction.START_DIAGNOSTIC
+    }
+
+    private fun com.example.naroo.diagnostic.domain.DiagnosticResult.hasRemainingRecoveryMission(
+        existingMissions: List<RecoveryMission>,
+    ): Boolean {
+        val createdConcepts = existingMissions.map { it.conceptTag }.toSet()
+        return orderedRecoveryConcepts().any { it !in createdConcepts }
+    }
+
+    private fun com.example.naroo.diagnostic.domain.DiagnosticResult.orderedRecoveryConcepts(): List<String> {
+        return buildList {
+            weakLinks.forEach { concept ->
+                if (concept !in this) {
+                    add(concept)
+                }
+            }
+            if (primaryRecoveryConcept !in this) {
+                add(primaryRecoveryConcept)
+            }
+        }
     }
 
     private fun RecoveryMission.toLearningHomeMissionResult(): LearningHomeMissionResult {

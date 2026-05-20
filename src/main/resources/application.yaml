@@ -25,6 +25,11 @@ spring:
 naroo:
   auth:
     email-verification-token-ttl-minutes: ${NAROO_AUTH_EMAIL_VERIFICATION_TOKEN_TTL_MINUTES:30}
+    email:
+      mode: ${NAROO_AUTH_EMAIL_MODE:log}
+      from-address: ${NAROO_AUTH_EMAIL_FROM_ADDRESS:no-reply@naroo.app}
+      from-name: ${NAROO_AUTH_EMAIL_FROM_NAME:Naroo}
+      verification-url-template: ${NAROO_AUTH_EMAIL_VERIFICATION_URL_TEMPLATE:http://localhost:3000/verify-email?token={token}}
     refresh-cookie-secure: ${NAROO_AUTH_REFRESH_COOKIE_SECURE:true}
     refresh-cookie-same-site: ${NAROO_AUTH_REFRESH_COOKIE_SAME_SITE:Strict}
   cors:

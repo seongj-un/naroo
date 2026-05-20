@@ -182,7 +182,8 @@ class UserLearningFlowSmokeTest(
             accessToken = reissuedAccessToken,
         )
         assertEquals(HttpStatus.OK.value(), home.statusCode)
-        assertEquals("CREATE_RECOVERY_MISSION", home.body.dataMap().string("nextAction"))
+        assertEquals("RECOVERY_SERIES_COMPLETED", home.body.dataMap().string("nextAction"))
+        assertEquals("COMPLETED", home.body.dataMap().map("latestMission").string("status"))
         assertEquals(1, home.body.dataMap().map("progress").number("completedMissionCount").toInt())
     }
 

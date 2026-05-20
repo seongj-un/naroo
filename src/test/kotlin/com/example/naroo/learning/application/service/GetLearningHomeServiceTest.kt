@@ -31,6 +31,7 @@ class GetLearningHomeServiceTest {
         assertEquals(LearningHomeNextAction.CONTINUE_RECOVERY_MISSION, result.nextAction)
         assertEquals("diagnostic-session-1", result.latestDiagnostic?.diagnosticSessionId)
         assertEquals("mission-1", result.todayMission?.id)
+        assertEquals("mission-1", result.latestMission?.id)
         assertEquals(1, result.progress.inProgressMissionCount)
     }
 
@@ -58,6 +59,25 @@ class GetLearningHomeServiceTest {
         val result = service.get(GetLearningHomeCommand(userId = "user-1", emailVerified = false))
 
         assertEquals(LearningHomeNextAction.EMAIL_VERIFICATION_REQUIRED, result.nextAction)
+    }
+
+    @Test
+    fun `returns completed recovery state when all recovery missions are done`() {
+        val completedMission = recoveryMission().copy(
+            status = RecoveryMissionStatus.COMPLETED,
+            completedAt = Instant.parse("2026-04-29T03:10:00Z"),
+        )
+        val service = GetLearningHomeService(
+            diagnosticResultRepositoryPort = FakeLearningHomeDiagnosticResultRepository(diagnosticResult()),
+            recoveryMissionRepositoryPort = FakeLearningHomeRecoveryMissionRepository(listOf(completedMission)),
+        )
+
+        val result = service.get(GetLearningHomeCommand(userId = "user-1", emailVerified = true))
+
+        assertEquals(LearningHomeNextAction.RECOVERY_SERIES_COMPLETED, result.nextAction)
+        assertNull(result.todayMission)
+        assertEquals("mission-1", result.latestMission?.id)
+        assertEquals(RecoveryMissionStatus.COMPLETED, result.latestMission?.status)
     }
 
     private fun diagnosticResult(): DiagnosticResult {

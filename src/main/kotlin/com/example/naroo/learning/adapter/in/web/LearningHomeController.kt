@@ -43,6 +43,7 @@ class LearningHomeController(
             nextAction = result.nextAction,
             latestDiagnostic = result.latestDiagnostic?.toResponse(),
             todayMission = result.todayMission?.toResponse(),
+            latestMission = result.latestMission?.toResponse(),
             progress = result.progress.toResponse(),
         ).toWrappedDto()
     }
@@ -53,6 +54,7 @@ data class LearningHomeResponse(
     val nextAction: LearningHomeNextAction,
     val latestDiagnostic: LearningHomeDiagnosticResponse?,
     val todayMission: LearningHomeMissionResponse?,
+    val latestMission: LearningHomeMissionResponse?,
     val progress: LearningHomeProgressResponse,
 ) : SuccessResponseDto
 

@@ -9,6 +9,8 @@ sealed class RecoveryMissionException : UseCaseException() {
 
     data object RecoveryMissionAlreadyCompleted : RecoveryMissionException()
 
+    data object RecoveryMissionSeriesCompleted : RecoveryMissionException()
+
     data object InvalidRecoveryMissionSubmission : RecoveryMissionException()
 
     data object RecoveryMissionTemplateNotFound : RecoveryMissionException()

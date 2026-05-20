@@ -10,9 +10,13 @@ import java.nio.charset.StandardCharsets
 @Profile("prod")
 class ProductionDeploymentGuard(
     @Value("\${naroo.jwt.secret}") private val jwtSecret: String,
+    @Value("\${naroo.auth.email.mode:log}") private val emailMode: String,
+    @Value("\${naroo.auth.email.from-address:}") private val emailFromAddress: String,
+    @Value("\${naroo.auth.email.verification-url-template:}") private val verificationUrlTemplate: String,
     @Value("\${naroo.auth.refresh-cookie-secure:true}") private val refreshCookieSecure: Boolean,
     @Value("\${naroo.auth.refresh-cookie-same-site:Strict}") private val refreshCookieSameSite: String,
     @Value("\${naroo.cors.allowed-origins:}") private val allowedOriginsValue: String,
+    @Value("\${spring.mail.host:}") private val mailHost: String,
 ) {
     @PostConstruct
     fun validate() {
@@ -21,6 +25,18 @@ class ProductionDeploymentGuard(
         }
         require(jwtSecret.toByteArray(StandardCharsets.UTF_8).size >= 32) {
             "NAROO_JWT_SECRET must be at least 32 bytes"
+        }
+        require(normalizeEmailMode(emailMode) == "smtp") {
+            "naroo.auth.email.mode must be smtp in prod"
+        }
+        require(mailHost.isNotBlank()) {
+            "spring.mail.host must be configured in prod"
+        }
+        require(emailFromAddress.isNotBlank()) {
+            "naroo.auth.email.from-address must be configured in prod"
+        }
+        require(verificationUrlTemplate.startsWith("https://") && verificationUrlTemplate.contains("{token}")) {
+            "naroo.auth.email.verification-url-template must be an https URL containing {token} in prod"
         }
         require(refreshCookieSecure) {
             "NAROO_AUTH_REFRESH_COOKIE_SECURE must stay true in prod"
@@ -47,6 +63,10 @@ class ProductionDeploymentGuard(
 
     private fun normalizeSameSite(value: String): String {
         return value.trim().lowercase().replaceFirstChar(Char::titlecase)
+    }
+
+    private fun normalizeEmailMode(value: String): String {
+        return value.trim().lowercase()
     }
 
     companion object {

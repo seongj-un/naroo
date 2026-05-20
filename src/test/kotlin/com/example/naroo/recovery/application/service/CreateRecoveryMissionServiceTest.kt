@@ -139,6 +139,33 @@ class CreateRecoveryMissionServiceTest {
         }
     }
 
+    @Test
+    fun `rejects creation when recovery series is already completed`() {
+        val existingMission = recoveryMission().copy(
+            status = RecoveryMissionStatus.COMPLETED,
+            completedAt = Instant.parse("2026-04-29T03:10:00Z"),
+        )
+        val service = CreateRecoveryMissionService(
+            diagnosticSessionRepositoryPort = FakeRecoveryDiagnosticSessionRepository(
+                diagnosticSession().copy(status = DiagnosticSessionStatus.COMPLETED),
+            ),
+            diagnosticResultRepositoryPort = FakeRecoveryDiagnosticResultRepository(diagnosticResult()),
+            recoveryMissionRepositoryPort = CapturingRecoveryMissionRepository(existingMission),
+            recoveryMissionTemplateRepositoryPort = FakeRecoveryMissionTemplateRepository(recoveryMissionTemplates()),
+            recoveryMissionIdGeneratorPort = RecoveryMissionIdGeneratorPort { RecoveryMissionId("mission-2") },
+            clock = Clock.fixed(Instant.parse("2026-04-29T03:20:00Z"), ZoneOffset.UTC),
+        )
+
+        assertThrows(RecoveryMissionException.RecoveryMissionSeriesCompleted::class.java) {
+            service.create(
+                CreateRecoveryMissionCommand(
+                    userId = "user-1",
+                    diagnosticSessionId = "diagnostic-session-1",
+                ),
+            )
+        }
+    }
+
     private fun diagnosticSession(): DiagnosticSession {
         return DiagnosticSession(
             id = DiagnosticSessionId("diagnostic-session-1"),

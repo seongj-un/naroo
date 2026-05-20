@@ -666,7 +666,7 @@ Response data:
 }
 ```
 
-현재 local email sender는 실제 메일 발송이 아니라 로그 기반이다. 로컬 개발에서는 서버 로그에서 token을 확인하거나, 별도 dev helper를 만들 필요가 있다.
+로컬 개발 기본값은 로그 기반이다. 운영에서는 SMTP 메일 발송과 프론트 verification URL을 같이 설정해야 한다.
 
 ### GET `/api/auth/me`
 
@@ -702,6 +702,7 @@ Response data:
   "nextAction": "START_DIAGNOSTIC",
   "latestDiagnostic": null,
   "todayMission": null,
+  "latestMission": null,
   "progress": {
     "completedMissionCount": 0,
     "inProgressMissionCount": 0
@@ -1107,6 +1108,7 @@ role 변경 후에는 다시 로그인해야 새 JWT에 role이 들어간다.
 - `START_DIAGNOSTIC`: starting point screen
 - `CREATE_RECOVERY_MISSION`: diagnostic result summary 또는 mission create CTA
 - `CONTINUE_RECOVERY_MISSION`: mission detail
+- `RECOVERY_SERIES_COMPLETED`: recovery 완료 상태 또는 다음 학습 안내
 
 에러 처리 기준:
 

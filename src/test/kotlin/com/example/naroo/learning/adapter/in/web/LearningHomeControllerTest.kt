@@ -42,6 +42,7 @@ class LearningHomeControllerTest {
         assertEquals("나루", response.data?.user?.nickname)
         assertEquals(LearningHomeNextAction.CONTINUE_RECOVERY_MISSION, response.data?.nextAction)
         assertEquals("mission-1", response.data?.todayMission?.id)
+        assertEquals("mission-1", response.data?.latestMission?.id)
     }
 
     private fun authenticate(emailVerified: Boolean) {
@@ -74,6 +75,16 @@ class LearningHomeControllerTest {
                 createdAt = Instant.parse("2026-04-29T02:00:00Z"),
             ),
             todayMission = LearningHomeMissionResult(
+                id = "mission-1",
+                diagnosticSessionId = "diagnostic-session-1",
+                conceptTag = "linear_function_slope",
+                title = "일차함수 기울기 10분 복구 미션",
+                status = RecoveryMissionStatus.IN_PROGRESS,
+                estimatedMinutes = 10,
+                createdAt = Instant.parse("2026-04-29T03:00:00Z"),
+                completedAt = null,
+            ),
+            latestMission = LearningHomeMissionResult(
                 id = "mission-1",
                 diagnosticSessionId = "diagnostic-session-1",
                 conceptTag = "linear_function_slope",

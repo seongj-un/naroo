@@ -137,6 +137,14 @@ Actuator로 간다.
    - `SPRING_PROFILES_ACTIVE=prod`
    - `NAROO_JWT_SECRET=<32바이트 이상 랜덤 문자열>`
    - `NAROO_CORS_ALLOWED_ORIGINS=https://<frontend-domain>`
+   - `NAROO_AUTH_EMAIL_MODE=smtp`
+   - `NAROO_AUTH_EMAIL_FROM_ADDRESS=no-reply@naroo.app`
+   - `NAROO_AUTH_EMAIL_FROM_NAME=Naroo`
+   - `NAROO_AUTH_EMAIL_VERIFICATION_URL_TEMPLATE=https://naroo.app/verify-email?token={token}`
+   - `SPRING_MAIL_HOST=<smtp-host>`
+   - `SPRING_MAIL_PORT=<smtp-port>`
+   - `SPRING_MAIL_USERNAME=<smtp-username>`
+   - `SPRING_MAIL_PASSWORD=<smtp-password>`
    - Railway 기본 도메인을 쓰면 `NAROO_AUTH_REFRESH_COOKIE_SAME_SITE=None`
 6. Railway가 MySQL/Redis reference vars를 backend에 연결했는지 확인
 7. GitHub repo 연결 후 deploy
@@ -157,6 +165,7 @@ curl https://<backend-domain>/actuator/health
 추가 확인:
 
 - `POST /api/auth/login` 성공
+- `POST /api/auth/sign-up` 후 실제 메일 수신 성공
 - 응답에 `refresh_token` 쿠키 포함
 - `Set-Cookie`에 `SameSite=None; Secure` 포함
 - 프론트 origin에서 `POST /api/auth/reissue`가 cookie 포함으로 성공
@@ -176,12 +185,11 @@ curl https://<backend-domain>/actuator/health
 
 - `RAILWAY_TOKEN`
 
-## 운영 QA 계정
+## 운영 메모
 
-- 운영 Railway에서 QA를 빨리 진행해야 하면 seeded verified 학생 계정을 임시로 켤 수 있다.
-- 공개형 기본값 `student01/password123`를 운영에 그대로 두는 것은 피한다.
-- 대신 `NAROO_SEED_STUDENT_ENABLED=true`와 함께 랜덤 `NAROO_SEED_STUDENT_LOGIN_ID`, `NAROO_SEED_STUDENT_EMAIL`, `NAROO_SEED_STUDENT_PASSWORD`를 같이 넣는다.
-- 이 계정은 `emailVerified=true`로 생성되므로 이메일 수신함 없이 진단, recovery mission, learning home 플로우를 바로 검증할 수 있다.
+- `prod` 프로필에서는 seeded QA 학생 계정이 더 이상 생성되지 않는다.
+- 운영 QA가 필요하면 실제 수신 가능한 메일함 계정으로 가입해서 검증하는 편이 맞다.
+- 기존 임시 QA 계정이 운영 DB에 남아 있다면 별도 수동 정리가 필요하다.
 
 ## 남아 있는 블로커
 

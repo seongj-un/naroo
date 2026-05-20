@@ -13,11 +13,13 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Instant
 
 @Component
+@Profile("!prod")
 class BetaStudentSeedRunner(
     private val userAccountRepositoryPort: UserAccountRepositoryPort,
     private val passwordHasherPort: PasswordHasherPort,

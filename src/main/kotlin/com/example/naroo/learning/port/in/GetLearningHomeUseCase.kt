@@ -18,6 +18,7 @@ data class LearningHomeResult(
     val nextAction: LearningHomeNextAction,
     val latestDiagnostic: LearningHomeDiagnosticResult?,
     val todayMission: LearningHomeMissionResult?,
+    val latestMission: LearningHomeMissionResult?,
     val progress: LearningHomeProgressResult,
 )
 
@@ -26,6 +27,7 @@ enum class LearningHomeNextAction {
     START_DIAGNOSTIC,
     CREATE_RECOVERY_MISSION,
     CONTINUE_RECOVERY_MISSION,
+    RECOVERY_SERIES_COMPLETED,
 }
 
 data class LearningHomeDiagnosticResult(
