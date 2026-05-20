@@ -21,6 +21,7 @@ import com.example.naroo.user.port.`out`.UserAccountRepositoryPort
 import com.example.naroo.user.port.`out`.UserIdGeneratorPort
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.time.Clock
 import java.time.Instant
@@ -97,6 +98,36 @@ class SignUpUserServiceTest {
             )
         }
     }
+
+    @Test
+    fun `cleans up saved user and token when email delivery fails`() {
+        val cleanupRepository = FakeUserAccountRepository()
+        val cleanupTokenStore = CapturingSignUpTokenStore()
+        val failingService = SignUpUserService(
+            userAccountRepositoryPort = cleanupRepository,
+            passwordHasherPort = PasswordHasherPort { PasswordHash("hashed:${it.length}") },
+            userIdGeneratorPort = UserIdGeneratorPort { UserId("user-cleanup") },
+            emailVerificationTokenPort = FakeEmailVerificationTokenPort(),
+            tokenStorePort = cleanupTokenStore,
+            emailSenderPort = EmailSenderPort { throw IllegalStateException("email send failed") },
+            clock = Clock.fixed(Instant.parse("2026-04-29T00:00:00Z"), ZoneOffset.UTC),
+        )
+
+        assertThrows(IllegalStateException::class.java) {
+            failingService.signUp(
+                SignUpUserCommand(
+                    loginId = "student03",
+                    email = "student03@example.com",
+                    password = "password123",
+                    nickname = "나루",
+                    mathStatus = MathStatus.UNKNOWN,
+                ),
+            )
+        }
+
+        assertTrue(cleanupRepository.saved.isEmpty())
+        assertEquals(listOf("email-token-1"), cleanupTokenStore.deletedEmailVerificationTokenIds)
+    }
 }
 
 private class FakeEmailVerificationTokenPort : EmailVerificationTokenPort {
@@ -116,6 +147,7 @@ private class FakeEmailVerificationTokenPort : EmailVerificationTokenPort {
 
 private class CapturingSignUpTokenStore : TokenStorePort {
     val emailVerificationTokens = mutableListOf<StoredEmailVerificationToken>()
+    val deletedEmailVerificationTokenIds = mutableListOf<String>()
 
     override fun saveAccessToken(token: StoredAccessToken) {
         error("access token should not be stored")
@@ -139,6 +171,11 @@ private class CapturingSignUpTokenStore : TokenStorePort {
 
     override fun consumeEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
         error("email verification token should not be consumed")
+    }
+
+    override fun deleteEmailVerificationToken(tokenId: String) {
+        deletedEmailVerificationTokenIds += tokenId
+        emailVerificationTokens.removeIf { it.tokenId == tokenId }
     }
 }
 
@@ -172,5 +209,9 @@ private class FakeUserAccountRepository : UserAccountRepositoryPort {
     override fun save(userAccount: UserAccount): UserAccount {
         saved += userAccount
         return userAccount
+    }
+
+    override fun deleteById(userId: UserId) {
+        saved.removeIf { it.id == userId }
     }
 }

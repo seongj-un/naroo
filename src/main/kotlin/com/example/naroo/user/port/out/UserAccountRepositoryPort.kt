@@ -11,6 +11,9 @@ interface UserAccountRepositoryPort {
     fun findByLoginId(loginId: LoginId): UserAccount?
     fun findById(userId: UserId): UserAccount?
     fun save(userAccount: UserAccount): UserAccount
+
+    fun deleteById(userId: UserId) {
+    }
 }
 
 class DuplicateUserAccountException(message: String) : RuntimeException(message)

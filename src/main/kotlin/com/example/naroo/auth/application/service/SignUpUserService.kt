@@ -74,13 +74,19 @@ class SignUpUserService(
                 expiresAt = verificationToken.expiresAt,
             ),
         )
-        emailSenderPort.sendEmailVerification(
-            EmailVerificationMessage(
-                userId = saved.id.value,
-                email = saved.email.value,
-                token = verificationToken.value,
-            ),
-        )
+        try {
+            emailSenderPort.sendEmailVerification(
+                EmailVerificationMessage(
+                    userId = saved.id.value,
+                    email = saved.email.value,
+                    token = verificationToken.value,
+                ),
+            )
+        } catch (ex: RuntimeException) {
+            tokenStorePort.deleteEmailVerificationToken(verificationToken.id)
+            userAccountRepositoryPort.deleteById(saved.id)
+            throw ex
+        }
 
         return SignedUpUserResult(
             id = saved.id,

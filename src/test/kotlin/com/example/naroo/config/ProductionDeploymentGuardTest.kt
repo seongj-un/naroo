@@ -9,13 +9,14 @@ class ProductionDeploymentGuardTest {
     fun `accepts production safe settings`() {
         val guard = ProductionDeploymentGuard(
             jwtSecret = "production-secret-that-is-long-enough-123",
-            emailMode = "smtp",
+            emailMode = "resend",
             emailFromAddress = "no-reply@naroo.app",
             verificationUrlTemplate = "https://naroo.app/verify-email?token={token}",
+            resendApiKey = "re_test_key",
             refreshCookieSecure = true,
             refreshCookieSameSite = "None",
             allowedOriginsValue = "https://naroo.app, https://www.naroo.app",
-            mailHost = "smtp.mailgun.org",
+            mailHost = "",
         )
 
         assertDoesNotThrow { guard.validate() }
@@ -25,13 +26,14 @@ class ProductionDeploymentGuardTest {
     fun `rejects local jwt secret in prod`() {
         val guard = ProductionDeploymentGuard(
             jwtSecret = "naroo-local-development-secret-32bytes",
-            emailMode = "smtp",
+            emailMode = "resend",
             emailFromAddress = "no-reply@naroo.app",
             verificationUrlTemplate = "https://naroo.app/verify-email?token={token}",
+            resendApiKey = "re_test_key",
             refreshCookieSecure = true,
             refreshCookieSameSite = "Strict",
             allowedOriginsValue = "https://naroo.app",
-            mailHost = "smtp.mailgun.org",
+            mailHost = "",
         )
 
         assertThrows(IllegalArgumentException::class.java) {
@@ -43,13 +45,14 @@ class ProductionDeploymentGuardTest {
     fun `rejects localhost cors origin in prod`() {
         val guard = ProductionDeploymentGuard(
             jwtSecret = "production-secret-that-is-long-enough-123",
-            emailMode = "smtp",
+            emailMode = "resend",
             emailFromAddress = "no-reply@naroo.app",
             verificationUrlTemplate = "https://naroo.app/verify-email?token={token}",
+            resendApiKey = "re_test_key",
             refreshCookieSecure = true,
             refreshCookieSameSite = "Strict",
             allowedOriginsValue = "http://localhost:3000",
-            mailHost = "smtp.mailgun.org",
+            mailHost = "",
         )
 
         assertThrows(IllegalArgumentException::class.java) {
@@ -64,6 +67,7 @@ class ProductionDeploymentGuardTest {
             emailMode = "log",
             emailFromAddress = "no-reply@naroo.app",
             verificationUrlTemplate = "https://naroo.app/verify-email?token={token}",
+            resendApiKey = "re_test_key",
             refreshCookieSecure = true,
             refreshCookieSameSite = "Strict",
             allowedOriginsValue = "https://naroo.app",
@@ -73,5 +77,41 @@ class ProductionDeploymentGuardTest {
         assertThrows(IllegalArgumentException::class.java) {
             guard.validate()
         }
+    }
+
+    @Test
+    fun `rejects resend mode without api key in prod`() {
+        val guard = ProductionDeploymentGuard(
+            jwtSecret = "production-secret-that-is-long-enough-123",
+            emailMode = "resend",
+            emailFromAddress = "no-reply@naroo.app",
+            verificationUrlTemplate = "https://naroo.app/verify-email?token={token}",
+            resendApiKey = "",
+            refreshCookieSecure = true,
+            refreshCookieSameSite = "Strict",
+            allowedOriginsValue = "https://naroo.app",
+            mailHost = "",
+        )
+
+        assertThrows(IllegalArgumentException::class.java) {
+            guard.validate()
+        }
+    }
+
+    @Test
+    fun `accepts smtp mode when mail host is configured`() {
+        val guard = ProductionDeploymentGuard(
+            jwtSecret = "production-secret-that-is-long-enough-123",
+            emailMode = "smtp",
+            emailFromAddress = "no-reply@naroo.app",
+            verificationUrlTemplate = "https://naroo.app/verify-email?token={token}",
+            resendApiKey = "",
+            refreshCookieSecure = true,
+            refreshCookieSameSite = "Strict",
+            allowedOriginsValue = "https://naroo.app",
+            mailHost = "smtp.mailgun.org",
+        )
+
+        assertDoesNotThrow { guard.validate() }
     }
 }

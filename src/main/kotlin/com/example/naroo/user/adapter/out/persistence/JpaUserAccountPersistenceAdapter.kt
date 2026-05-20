@@ -48,6 +48,10 @@ class JpaUserAccountPersistenceAdapter(
             throw DuplicateUserAccountException("loginId or email already exists")
         }
     }
+
+    override fun deleteById(userId: UserId) {
+        repository.deleteById(userId.value)
+    }
 }
 
 interface SpringDataUserAccountJpaRepository : JpaRepository<UserAccountJpaEntity, String> {

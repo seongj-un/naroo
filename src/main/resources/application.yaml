@@ -30,6 +30,9 @@ naroo:
       from-address: ${NAROO_AUTH_EMAIL_FROM_ADDRESS:no-reply@naroo.app}
       from-name: ${NAROO_AUTH_EMAIL_FROM_NAME:Naroo}
       verification-url-template: ${NAROO_AUTH_EMAIL_VERIFICATION_URL_TEMPLATE:http://localhost:3000/verify-email?token={token}}
+      resend:
+        api-key: ${NAROO_AUTH_EMAIL_RESEND_API_KEY:}
+        base-url: ${NAROO_AUTH_EMAIL_RESEND_BASE_URL:https://api.resend.com}
     refresh-cookie-secure: ${NAROO_AUTH_REFRESH_COOKIE_SECURE:true}
     refresh-cookie-same-site: ${NAROO_AUTH_REFRESH_COOKIE_SAME_SITE:Strict}
   cors:
@@ -52,6 +55,9 @@ management:
     web:
       exposure:
         include: health
+  health:
+    mail:
+      enabled: false
   endpoint:
     health:
       show-details: never

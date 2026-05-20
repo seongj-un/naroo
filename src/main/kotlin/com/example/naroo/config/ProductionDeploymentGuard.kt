@@ -13,6 +13,7 @@ class ProductionDeploymentGuard(
     @Value("\${naroo.auth.email.mode:log}") private val emailMode: String,
     @Value("\${naroo.auth.email.from-address:}") private val emailFromAddress: String,
     @Value("\${naroo.auth.email.verification-url-template:}") private val verificationUrlTemplate: String,
+    @Value("\${naroo.auth.email.resend.api-key:}") private val resendApiKey: String,
     @Value("\${naroo.auth.refresh-cookie-secure:true}") private val refreshCookieSecure: Boolean,
     @Value("\${naroo.auth.refresh-cookie-same-site:Strict}") private val refreshCookieSameSite: String,
     @Value("\${naroo.cors.allowed-origins:}") private val allowedOriginsValue: String,
@@ -26,11 +27,18 @@ class ProductionDeploymentGuard(
         require(jwtSecret.toByteArray(StandardCharsets.UTF_8).size >= 32) {
             "NAROO_JWT_SECRET must be at least 32 bytes"
         }
-        require(normalizeEmailMode(emailMode) == "smtp") {
-            "naroo.auth.email.mode must be smtp in prod"
+        val normalizedEmailMode = normalizeEmailMode(emailMode)
+        require(normalizedEmailMode in allowedEmailModes) {
+            "naroo.auth.email.mode must be one of smtp or resend in prod"
         }
-        require(mailHost.isNotBlank()) {
-            "spring.mail.host must be configured in prod"
+        when (normalizedEmailMode) {
+            "smtp" -> require(mailHost.isNotBlank()) {
+                "spring.mail.host must be configured in prod when naroo.auth.email.mode=smtp"
+            }
+
+            "resend" -> require(resendApiKey.isNotBlank()) {
+                "naroo.auth.email.resend.api-key must be configured in prod when naroo.auth.email.mode=resend"
+            }
         }
         require(emailFromAddress.isNotBlank()) {
             "naroo.auth.email.from-address must be configured in prod"
@@ -73,5 +81,6 @@ class ProductionDeploymentGuard(
         private const val DEFAULT_LOCAL_JWT_SECRET = "naroo-local-development-secret-32bytes"
         private val localhostPattern = Regex("localhost|127\\.0\\.0\\.1")
         private val allowedSameSiteValues = setOf("Strict", "Lax", "None")
+        private val allowedEmailModes = setOf("smtp", "resend")
     }
 }

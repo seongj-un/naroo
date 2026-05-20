@@ -91,6 +91,10 @@ class RedisTokenStoreAdapter(
         )
     }
 
+    override fun deleteEmailVerificationToken(tokenId: String) {
+        redisTemplate.delete(emailVerificationTokenKey(tokenId))
+    }
+
     private fun accessTokenKey(tokenId: String): String {
         return "auth:access-token:$tokenId"
     }
