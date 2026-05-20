@@ -11,10 +11,13 @@ class WebCorsConfig(
     private val allowedOriginsValue: String,
 ) : WebMvcConfigurer {
     override fun addCorsMappings(registry: CorsRegistry) {
+        // Keep the temporary Vercel QA frontend reachable until the final custom domain cutover.
         val allowedOrigins = allowedOriginsValue
             .split(",")
             .map(String::trim)
             .filter(String::isNotBlank)
+            .plus(extraAllowedOrigins)
+            .distinct()
             .toTypedArray()
 
         registry.addMapping("/api/**")
@@ -22,5 +25,11 @@ class WebCorsConfig(
             .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .allowedHeaders("*")
             .allowCredentials(true)
+    }
+
+    companion object {
+        private val extraAllowedOrigins = listOf(
+            "https://web-naroo.vercel.app",
+        )
     }
 }

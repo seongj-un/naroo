@@ -8,14 +8,21 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry
 
 class WebCorsConfigTest {
     @Test
-    fun `allows only configured origins with credentials for api routes`() {
+    fun `allows configured origins plus temporary qa frontend with credentials for api routes`() {
         val registry = CapturingCorsRegistry()
 
         WebCorsConfig("https://naroo.app, https://www.naroo.app").addCorsMappings(registry)
 
         val registration = registry.registration ?: error("cors registration was not captured")
         assertEquals("/api/**", registration.capturedPathPattern)
-        assertEquals(listOf("https://naroo.app", "https://www.naroo.app"), registration.allowedOrigins)
+        assertEquals(
+            listOf(
+                "https://naroo.app",
+                "https://www.naroo.app",
+                "https://web-naroo.vercel.app",
+            ),
+            registration.allowedOrigins,
+        )
         assertEquals(true, registration.allowCredentials)
         assertTrue("OPTIONS" in registration.allowedMethods)
     }
