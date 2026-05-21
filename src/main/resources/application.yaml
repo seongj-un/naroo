@@ -26,6 +26,7 @@ naroo:
   auth:
     email-verification-token-ttl-minutes: ${NAROO_AUTH_EMAIL_VERIFICATION_TOKEN_TTL_MINUTES:30}
     email:
+      resend-cooldown-seconds: ${NAROO_AUTH_EMAIL_RESEND_COOLDOWN_SECONDS:60}
       mode: ${NAROO_AUTH_EMAIL_MODE:log}
       from-address: ${NAROO_AUTH_EMAIL_FROM_ADDRESS:no-reply@naroo.app}
       from-name: ${NAROO_AUTH_EMAIL_FROM_NAME:Naroo}

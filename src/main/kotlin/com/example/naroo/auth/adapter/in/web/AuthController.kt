@@ -3,6 +3,8 @@ package com.example.naroo.auth.adapter.`in`.web
 import com.example.naroo.auth.application.AuthException
 import com.example.naroo.auth.port.`in`.LoginUserCommand
 import com.example.naroo.auth.port.`in`.LoginUserUseCase
+import com.example.naroo.auth.port.`in`.ResendEmailVerificationCommand
+import com.example.naroo.auth.port.`in`.ResendEmailVerificationUseCase
 import com.example.naroo.auth.port.`in`.ReissueTokenCommand
 import com.example.naroo.auth.port.`in`.ReissueTokenUseCase
 import com.example.naroo.auth.port.`in`.SignUpUserCommand
@@ -32,6 +34,7 @@ class AuthController(
     private val loginUserUseCase: LoginUserUseCase,
     private val reissueTokenUseCase: ReissueTokenUseCase,
     private val verifyEmailUseCase: VerifyEmailUseCase,
+    private val resendEmailVerificationUseCase: ResendEmailVerificationUseCase,
     @Value("\${naroo.auth.refresh-cookie-secure:true}")
     private val refreshCookieSecure: Boolean = true,
     @Value("\${naroo.auth.refresh-cookie-same-site:Strict}")
@@ -125,6 +128,22 @@ class AuthController(
         )
     }
 
+    @PostMapping("/email/resend")
+    fun resendEmailVerification(): ResponseEntity<APiWrappedResponseDto<ResendEmailVerificationResponse>> {
+        val authentication = JwtAuthentication.current() ?: throw AuthException.Unauthorized
+        val result = resendEmailVerificationUseCase.resend(
+            ResendEmailVerificationCommand(userId = authentication.userId),
+        )
+        return ResponseEntity.ok(
+            ResendEmailVerificationResponse(
+                userId = result.userId,
+                email = result.email,
+                emailVerified = result.emailVerified,
+                nextRetryAt = result.nextRetryAt,
+            ).toWrappedDto(),
+        )
+    }
+
     @GetMapping("/me")
     fun me(): APiWrappedResponseDto<MeResponse> {
         val authentication = JwtAuthentication.current() ?: throw AuthException.Unauthorized
@@ -209,6 +228,13 @@ data class VerifyEmailResponse(
     val userId: String,
     val email: String,
     val emailVerified: Boolean,
+) : SuccessResponseDto
+
+data class ResendEmailVerificationResponse(
+    val userId: String,
+    val email: String,
+    val emailVerified: Boolean,
+    val nextRetryAt: Instant,
 ) : SuccessResponseDto
 
 data class LoginUserResponseUser(

@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 
 @Component
 class RedisTokenStoreAdapter(
@@ -95,6 +96,24 @@ class RedisTokenStoreAdapter(
         redisTemplate.delete(emailVerificationTokenKey(tokenId))
     }
 
+    override fun saveEmailVerificationResendCooldown(userId: String, availableAt: Instant) {
+        val ttl = Duration.between(clock.instant(), availableAt)
+        if (ttl.isNegative || ttl.isZero) {
+            return
+        }
+
+        redisTemplate.opsForValue().set(
+            emailVerificationResendCooldownKey(userId),
+            availableAt.toString(),
+            ttl,
+        )
+    }
+
+    override fun findEmailVerificationResendAvailableAt(userId: String): Instant? {
+        val storedValue = redisTemplate.opsForValue().get(emailVerificationResendCooldownKey(userId)) ?: return null
+        return runCatching { Instant.parse(storedValue) }.getOrNull()
+    }
+
     private fun accessTokenKey(tokenId: String): String {
         return "auth:access-token:$tokenId"
     }
@@ -105,5 +124,9 @@ class RedisTokenStoreAdapter(
 
     private fun emailVerificationTokenKey(tokenId: String): String {
         return "auth:email-verification-token:$tokenId"
+    }
+
+    private fun emailVerificationResendCooldownKey(userId: String): String {
+        return "auth:email-verification-resend-cooldown:$userId"
     }
 }

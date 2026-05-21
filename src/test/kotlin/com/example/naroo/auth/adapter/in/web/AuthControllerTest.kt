@@ -4,6 +4,9 @@ import com.example.naroo.auth.port.`in`.LoggedInUser
 import com.example.naroo.auth.port.`in`.LoggedInUserResult
 import com.example.naroo.auth.port.`in`.LoginUserCommand
 import com.example.naroo.auth.port.`in`.LoginUserUseCase
+import com.example.naroo.auth.port.`in`.ResendEmailVerificationCommand
+import com.example.naroo.auth.port.`in`.ResendEmailVerificationUseCase
+import com.example.naroo.auth.port.`in`.ResentEmailVerificationResult
 import com.example.naroo.auth.port.`in`.ReissueTokenCommand
 import com.example.naroo.auth.port.`in`.ReissueTokenUseCase
 import com.example.naroo.auth.port.`in`.ReissuedTokenResult
@@ -15,12 +18,20 @@ import com.example.naroo.auth.port.`in`.VerifyEmailCommand
 import com.example.naroo.auth.port.`in`.VerifyEmailUseCase
 import com.example.naroo.user.domain.MathStatus
 import com.example.naroo.user.domain.UserId
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.http.HttpStatus
 import java.time.Instant
 
 class AuthControllerTest {
+    @AfterEach
+    fun clearSecurityContext() {
+        SecurityContextHolder.clearContext()
+    }
+
     @Test
     fun `sign-up returns created user response`() {
         var capturedCommand: SignUpUserCommand? = null
@@ -40,6 +51,7 @@ class AuthControllerTest {
             LoginUserUseCase { error("login should not be called") },
             ReissueTokenUseCase { error("reissue should not be called") },
             VerifyEmailUseCase { error("verify email should not be called") },
+            ResendEmailVerificationUseCase { error("resend email should not be called") },
         )
 
         val response = controller.signUp(
@@ -88,6 +100,7 @@ class AuthControllerTest {
             },
             ReissueTokenUseCase { error("reissue should not be called") },
             VerifyEmailUseCase { error("verify email should not be called") },
+            ResendEmailVerificationUseCase { error("resend email should not be called") },
         )
 
         val response = controller.login(
@@ -138,6 +151,7 @@ class AuthControllerTest {
             },
             ReissueTokenUseCase { error("reissue should not be called") },
             VerifyEmailUseCase { error("verify email should not be called") },
+            ResendEmailVerificationUseCase { error("resend email should not be called") },
             refreshCookieSecure = false,
         )
 
@@ -170,6 +184,7 @@ class AuthControllerTest {
                 )
             },
             VerifyEmailUseCase { error("verify email should not be called") },
+            ResendEmailVerificationUseCase { error("resend email should not be called") },
         )
 
         val response = controller.reissue("refresh-token")
@@ -210,6 +225,7 @@ class AuthControllerTest {
             },
             ReissueTokenUseCase { error("reissue should not be called") },
             VerifyEmailUseCase { error("verify email should not be called") },
+            ResendEmailVerificationUseCase { error("resend email should not be called") },
             refreshCookieSameSite = "None",
         )
 
@@ -239,6 +255,7 @@ class AuthControllerTest {
                     emailVerified = true,
                 )
             },
+            ResendEmailVerificationUseCase { error("resend email should not be called") },
         )
 
         val response = controller.verifyEmail(VerifyEmailRequest(token = "email-token"))
@@ -248,5 +265,47 @@ class AuthControllerTest {
         assertEquals("user-1", response.body?.data?.userId)
         assertEquals("student01@example.com", response.body?.data?.email)
         assertEquals(true, response.body?.data?.emailVerified)
+    }
+
+    @Test
+    fun `resend email verification returns next retry time for current user`() {
+        var capturedCommand: ResendEmailVerificationCommand? = null
+        val controller = AuthController(
+            SignUpUserUseCase { error("sign-up should not be called") },
+            LoginUserUseCase { error("login should not be called") },
+            ReissueTokenUseCase { error("reissue should not be called") },
+            VerifyEmailUseCase { error("verify email should not be called") },
+            ResendEmailVerificationUseCase { command ->
+                capturedCommand = command
+                ResentEmailVerificationResult(
+                    userId = "user-1",
+                    email = "student01@example.com",
+                    emailVerified = false,
+                    nextRetryAt = Instant.parse("2026-05-21T07:00:00Z"),
+                )
+            },
+        )
+        authenticate(emailVerified = false)
+
+        val response = controller.resendEmailVerification()
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals("user-1", capturedCommand?.userId)
+        assertEquals("student01@example.com", response.body?.data?.email)
+        assertEquals(false, response.body?.data?.emailVerified)
+        assertEquals(Instant.parse("2026-05-21T07:00:00Z"), response.body?.data?.nextRetryAt)
+    }
+
+    private fun authenticate(emailVerified: Boolean) {
+        val authentication = JwtAuthentication(
+            tokenId = "token-1",
+            userId = "user-1",
+            loginId = "student01",
+            emailVerified = emailVerified,
+            nickname = "나루",
+            role = "STUDENT",
+        )
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(authentication, null, emptyList())
     }
 }

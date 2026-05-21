@@ -12,6 +12,16 @@ interface TokenStorePort {
 
     fun deleteEmailVerificationToken(tokenId: String) {
     }
+
+    fun saveEmailVerificationResendCooldown(
+        userId: String,
+        availableAt: Instant,
+    ) {
+    }
+
+    fun findEmailVerificationResendAvailableAt(userId: String): Instant? {
+        return null
+    }
 }
 
 data class StoredAccessToken(
