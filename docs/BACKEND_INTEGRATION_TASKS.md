@@ -75,6 +75,7 @@ Must verify these endpoints end-to-end:
 POST /api/auth/sign-up
 POST /api/auth/login
 POST /api/auth/email/verify
+POST /api/auth/email/resend
 POST /api/auth/reissue
 GET  /api/auth/me
 GET  /api/me/learning-home

@@ -31,6 +31,7 @@ Useful endpoints:
 - `GET /api/math-areas`
 - `POST /api/auth/sign-up`
 - `POST /api/auth/email/verify`
+- `POST /api/auth/email/resend`
 - `POST /api/auth/login`
 - `POST /api/auth/reissue`
 - `GET /api/auth/me`
@@ -57,6 +58,12 @@ Example email verification body:
   "token": "token-from-application-log"
 }
 ```
+
+Example email verification resend:
+
+- `POST /api/auth/email/resend`
+- No request body
+- Requires authenticated user
 
 Example starting point body:
 

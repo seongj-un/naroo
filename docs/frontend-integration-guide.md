@@ -668,6 +668,33 @@ Response data:
 
 로컬 개발 기본값은 로그 기반이다. 운영에서는 SMTP 메일 발송과 프론트 verification URL을 같이 설정해야 한다.
 
+### POST `/api/auth/email/resend`
+
+Requires authenticated user.
+
+Request:
+
+- No body
+
+Response data:
+
+```json
+{
+  "userId": "user-id",
+  "email": "student@example.com",
+  "emailVerified": false,
+  "nextRetryAt": "2026-05-21T08:30:00Z"
+}
+```
+
+Failure cases:
+
+- `401 AUTH_UNAUTHORIZED`
+- `409 AUTH_EMAIL_ALREADY_VERIFIED`
+- `429 AUTH_EMAIL_VERIFICATION_RESEND_TOO_SOON`
+
+If the server returns `429`, use the `Retry-After` header or `nextRetryAt` to disable the resend button until retry is allowed.
+
 ### GET `/api/auth/me`
 
 Requires Bearer token.
