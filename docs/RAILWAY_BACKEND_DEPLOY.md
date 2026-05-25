@@ -26,8 +26,8 @@ Last updated: 2026-05-19
   - `REDISHOST`, `REDISPORT`, `REDISUSER`, `REDISPASSWORD`
 - Spring Boot Actuator 추가
 - `/actuator/health` 노출
-- Railway config-as-code 파일 [railway.toml](/Users/seongjun/Desktop/project/naroo/railway.toml) 추가
-- GitHub Actions 테스트 워크플로 [.github/workflows/backend-test.yml](/Users/seongjun/Desktop/project/naroo/.github/workflows/backend-test.yml) 추가
+- Railway config-as-code 파일 [railway.toml](../railway.toml) 추가
+- GitHub Actions 테스트 워크플로 `.github/workflows/backend-test.yml` 추가
 - `prod` 프로필에서 운영 안전장치 추가
   - 기본 JWT secret 금지
   - `NAROO_AUTH_REFRESH_COOKIE_SECURE=true` 강제

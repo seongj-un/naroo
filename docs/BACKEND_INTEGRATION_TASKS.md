@@ -1,6 +1,6 @@
 # Backend Integration Tasks
 
-Last updated: 2026-05-19
+Last updated: 2026-05-25
 
 This is the remaining checklist before Naroo can be treated as beta-ready. The frontend already has API repository wiring for auth, learning home, diagnostics, and recovery missions. The next work is not more mock UI. The next work is proving the real backend flow with real content.
 
@@ -13,6 +13,41 @@ This is the remaining checklist before Naroo can be treated as beta-ready. The f
 - Mock/unit/widget tests pass.
 - Browser QA verified that the web app renders from a release build.
 - Browser QA verified graceful failure when `http://localhost:8080` is offline.
+- Local debug web server QA verified that `http://localhost:3000` renders against the real backend.
+
+## 2026-05-25 Local QA Snapshot
+
+- Local backend boot verified with:
+
+```bash
+NAROO_AUTH_REFRESH_COOKIE_SECURE=false \
+NAROO_JWT_SECRET=local-dev-secret-local-dev-secret-local \
+NAROO_SEED_STUDENT_ENABLED=true \
+./gradlew bootRun
+```
+
+- Local health check verified:
+
+```bash
+curl http://localhost:8080/actuator/health
+```
+
+- Result: `{"status":"UP"}`
+- Local MySQL and Redis connections were verified during runtime.
+- Fresh-user API flow was verified end-to-end:
+  - sign up
+  - email verify from log token
+  - login
+  - learning home
+  - starting point selection
+  - diagnostic session creation
+  - diagnostic questions fetch
+  - diagnostic answer submission
+  - diagnostic result fetch
+  - first recovery mission creation
+  - mission submission
+  - next recovery mission creation
+- Seeded verified student login was also verified by direct API call.
 
 ## Backend Must-Do
 
@@ -40,6 +75,11 @@ NAROO_SEED_STUDENT_ENABLED=true \
 ```
 
 The frontend cannot complete real login, diagnostic, or recovery QA until this stack is online.
+
+Status on 2026-05-25:
+
+- Done for local API QA
+- Remaining work is stable browser-driven UI QA and deployed-environment QA
 
 ### 2. Seed beta content
 
@@ -90,6 +130,35 @@ GET  /api/recovery-missions/{recoveryMissionId}
 POST /api/recovery-missions/{recoveryMissionId}/submissions
 ```
 
+Status on 2026-05-25:
+
+- Verified:
+  - `POST /api/auth/sign-up`
+  - `POST /api/auth/login`
+  - `POST /api/auth/email/verify`
+  - `POST /api/auth/email/resend`
+  - `POST /api/auth/reissue`
+  - `GET /api/auth/me`
+  - `GET /api/me/learning-home`
+  - `GET /api/math-areas`
+  - `POST /api/diagnostics/starting-point`
+  - `POST /api/diagnostics`
+  - `GET /api/diagnostics/{diagnosticSessionId}/questions`
+  - `POST /api/diagnostics/{diagnosticSessionId}/answers`
+  - `GET /api/diagnostics/{diagnosticSessionId}/result`
+  - `POST /api/recovery-missions`
+  - `GET /api/recovery-missions/{recoveryMissionId}`
+  - `POST /api/recovery-missions/{recoveryMissionId}/submissions`
+- Resend contract details confirmed:
+  - success for authenticated unverified user
+  - cooldown response `429 AUTH_EMAIL_VERIFICATION_RESEND_TOO_SOON`
+  - token log emission from `LoggingEmailSenderAdapter`
+- Reissue contract details confirmed:
+  - success with `refresh_token` cookie only
+  - refresh token rotation via new `Set-Cookie`
+  - old refresh token reuse rejected with `401 AUTH_INVALID_REFRESH_TOKEN`
+  - missing cookie rejected with `401 AUTH_REFRESH_TOKEN_REQUIRED`
+
 The most fragile response fields are:
 
 - `emailVerified`
@@ -113,6 +182,12 @@ For fast QA, backend should provide one of these:
 - Seeded verified test account
 
 Recommended for beta QA: seeded verified test account plus log-based verification for signup testing.
+
+Status on 2026-05-25:
+
+- Verified. The logging adapter emitted:
+  - `email verification requested userId=... email=... token=...`
+- This is sufficient for local QA.
 
 Seeded verified test account is available when `NAROO_SEED_STUDENT_ENABLED=true`:
 
@@ -139,6 +214,24 @@ Backend must verify:
 - Local HTTP uses `NAROO_AUTH_REFRESH_COOKIE_SECURE=false`.
 - Production uses secure cookie settings.
 - CORS allows the deployed frontend origin.
+
+Status on 2026-05-25:
+
+- Local header-level verification completed for production-style cookie flags.
+- Running with:
+
+```bash
+NAROO_AUTH_REFRESH_COOKIE_SECURE=true \
+NAROO_AUTH_REFRESH_COOKIE_SAME_SITE=None \
+NAROO_JWT_SECRET=local-dev-secret-local-dev-secret-local \
+./gradlew bootRun
+```
+
+- Verified on both `POST /api/auth/login` and `POST /api/auth/reissue` response headers:
+  - `Set-Cookie: ...; Secure; HttpOnly; SameSite=None`
+- Remaining work:
+  - browser round-trip verification on real HTTPS frontend/backend deployment
+  - cross-site credential flow verification with deployed CORS settings
 
 ### 6. Prepare beta deployment environment
 
@@ -229,7 +322,7 @@ Flow:
 
 ## Not Done Yet
 
-- Real backend E2E QA.
 - Production/staging deployment QA.
-- Accessibility QA for Flutter web semantics.
+- Browser-driven accessibility QA for Flutter web semantics.
 - Real beta student feedback loop.
+- HTTPS browser round-trip verification for cross-site `SameSite=None; Secure` cookie behavior.

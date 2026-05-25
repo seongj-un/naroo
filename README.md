@@ -1,5 +1,10 @@
 # Naroo
 
+현재 워크스페이스 구조:
+
+- backend: 현재 Spring Boot API 저장소
+- frontend: `../frontend` Flutter 앱 저장소
+
 ## Local Development
 
 Start MySQL and Redis:
@@ -97,5 +102,5 @@ docker compose down
 
 Deployment notes:
 
-- Railway backend deploy guide: [docs/RAILWAY_BACKEND_DEPLOY.md](/Users/seongjun/Desktop/project/naroo/docs/RAILWAY_BACKEND_DEPLOY.md)
-- Example Railway env file: [.env.railway.example](/Users/seongjun/Desktop/project/naroo/.env.railway.example)
+- Railway backend deploy guide: [docs/RAILWAY_BACKEND_DEPLOY.md](docs/RAILWAY_BACKEND_DEPLOY.md)
+- Example Railway env file: [.env.railway.example](.env.railway.example)
