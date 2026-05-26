@@ -8,6 +8,9 @@ interface TokenStorePort {
     fun saveRefreshToken(token: StoredRefreshToken)
     fun consumeRefreshToken(tokenId: String): StoredRefreshToken?
     fun saveEmailVerificationToken(token: StoredEmailVerificationToken)
+    fun findEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
+        return null
+    }
     fun consumeEmailVerificationToken(tokenId: String): StoredEmailVerificationToken?
 
     fun deleteEmailVerificationToken(tokenId: String) {

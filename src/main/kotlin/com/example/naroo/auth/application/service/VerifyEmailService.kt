@@ -23,7 +23,7 @@ class VerifyEmailService(
             throw AuthException.InvalidEmailVerificationToken
         }
 
-        val storedToken = tokenStorePort.consumeEmailVerificationToken(tokenId)
+        val storedToken = tokenStorePort.findEmailVerificationToken(tokenId)
             ?: throw AuthException.InvalidEmailVerificationToken
 
         if (storedToken.tokenHash != emailVerificationTokenPort.hash(command.token)) {
@@ -42,6 +42,8 @@ class VerifyEmailService(
         } else {
             userAccountRepositoryPort.save(userAccount.copy(emailVerified = true))
         }
+
+        tokenStorePort.deleteEmailVerificationToken(tokenId)
 
         return VerifiedEmailResult(
             userId = verifiedUser.id.value,

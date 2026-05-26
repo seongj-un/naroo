@@ -19,11 +19,23 @@ Run the application:
 ./gradlew bootRun
 ```
 
+Run with seeded beta content and a verified QA student:
+
+```bash
+NAROO_SEED_BETA_CONTENT_ENABLED=true \
+NAROO_SEED_STUDENT_ENABLED=true \
+NAROO_AUTH_REFRESH_COOKIE_SECURE=false \
+NAROO_JWT_SECRET=local-dev-secret-local-dev-secret-local \
+./gradlew bootRun
+```
+
 Default local services:
 
 - MySQL: `localhost:3306`, database `naroo`, user `naroo`, password `naroo`
 - Redis: `localhost:6379`
 - Email verification sender: local logging adapter. Check the application log for the verification token.
+- Beta diagnostic/recovery content can be auto-seeded with `NAROO_SEED_BETA_CONTENT_ENABLED=true`.
+- Verified QA student can be auto-seeded outside `prod` with `NAROO_SEED_STUDENT_ENABLED=true`.
 
 The application also accepts Xquare-style environment variables:
 
@@ -104,3 +116,4 @@ Deployment notes:
 
 - Railway backend deploy guide: [docs/RAILWAY_BACKEND_DEPLOY.md](docs/RAILWAY_BACKEND_DEPLOY.md)
 - Example Railway env file: [.env.railway.example](.env.railway.example)
+- Railway deploy workflow: [.github/workflows/backend-deploy-railway.yml](.github/workflows/backend-deploy-railway.yml)

@@ -63,7 +63,7 @@ class VerifyEmailServiceTest {
     }
 
     @Test
-    fun `rejects token with invalid hash and consumes it`() {
+    fun `rejects token with invalid hash without consuming it`() {
         val tokenStore = CapturingVerifyEmailTokenStore(
             StoredEmailVerificationToken(
                 tokenId = "email-token-1",
@@ -82,9 +82,10 @@ class VerifyEmailServiceTest {
         assertThrows(AuthException.InvalidEmailVerificationToken::class.java) {
             service.verify(VerifyEmailCommand(token = "email-token-1.secret"))
         }
-        assertThrows(AuthException.InvalidEmailVerificationToken::class.java) {
-            service.verify(VerifyEmailCommand(token = "email-token-1.secret"))
-        }
+        assertEquals(
+            "different-hash",
+            tokenStore.findEmailVerificationToken("email-token-1")?.tokenHash,
+        )
     }
 }
 
@@ -126,8 +127,16 @@ private class CapturingVerifyEmailTokenStore(
         tokensById[token.tokenId] = token
     }
 
+    override fun findEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
+        return tokensById[tokenId]
+    }
+
     override fun consumeEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
         return tokensById.remove(tokenId)
+    }
+
+    override fun deleteEmailVerificationToken(tokenId: String) {
+        tokensById.remove(tokenId)
     }
 }
 

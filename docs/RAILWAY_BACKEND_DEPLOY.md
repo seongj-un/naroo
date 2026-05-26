@@ -1,6 +1,6 @@
 # Naroo Backend Railway Deploy
 
-Last updated: 2026-05-19
+Last updated: 2026-05-26
 
 이 문서는 현재 `naroo` 백엔드 코드 기준으로 Railway 첫 배포에 필요한 최소 조건만 정리한다. 추측성 설정은 넣지 않고, 실제 코드가 읽는 값과 이번 저장소 변경만 다룬다.
 
@@ -28,6 +28,7 @@ Last updated: 2026-05-19
 - `/actuator/health` 노출
 - Railway config-as-code 파일 [railway.toml](../railway.toml) 추가
 - GitHub Actions 테스트 워크플로 `.github/workflows/backend-test.yml` 추가
+- GitHub Actions Railway 배포 워크플로 `.github/workflows/backend-deploy-railway.yml` 추가
 - `prod` 프로필에서 운영 안전장치 추가
   - 기본 JWT secret 금지
   - `NAROO_AUTH_REFRESH_COOKIE_SECURE=true` 강제
@@ -67,6 +68,7 @@ Actuator로 간다.
 - `NAROO_JWT_ACCESS_TOKEN_TTL_MINUTES=60`
 - `NAROO_JWT_REFRESH_TOKEN_TTL_DAYS=3`
 - `NAROO_AUTH_EMAIL_VERIFICATION_TOKEN_TTL_MINUTES=30`
+- `NAROO_SEED_BETA_CONTENT_ENABLED=true`
 - `NAROO_SEED_STUDENT_ENABLED=false`
 
 ### MySQL 연결 값
@@ -172,18 +174,20 @@ curl https://<backend-domain>/actuator/health
 
 ## GitHub Actions
 
-현재 저장소에는 테스트 워크플로만 추가했다.
+현재 저장소에는 두 가지 워크플로가 있다.
 
-- PR / main push 시 `./gradlew test`
+- `.github/workflows/backend-test.yml`
+  - PR과 수동 실행에서 `./gradlew test`
+- `.github/workflows/backend-deploy-railway.yml`
+  - `main` push 또는 수동 실행에서 `./gradlew test`
+  - `RAILWAY_API_TOKEN`, `RAILWAY_PROJECT_ID`, `RAILWAY_ENVIRONMENT_NAME`, `RAILWAY_SERVICE_NAME`가 모두 있으면 `railway up --ci`로 배포
 
-지금 단계에서 Railway deploy workflow를 같이 넣지 않은 이유:
+배포 워크플로에 필요한 대표 값:
 
-- 실제 Railway project/service 연결 정보가 이 저장소 안에 없다
-- 잘못된 deploy workflow를 넣는 것보다 test gate만 먼저 두는 편이 안전하다
-
-향후 CLI 배포를 붙일 때 필요한 대표 secret:
-
-- `RAILWAY_TOKEN`
+- `RAILWAY_API_TOKEN`
+- `RAILWAY_PROJECT_ID`
+- `RAILWAY_ENVIRONMENT_NAME`
+- `RAILWAY_SERVICE_NAME`
 
 ## 운영 메모
 

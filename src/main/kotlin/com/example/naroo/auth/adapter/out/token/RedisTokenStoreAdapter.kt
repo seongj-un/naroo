@@ -75,6 +75,22 @@ class RedisTokenStoreAdapter(
         )
     }
 
+    override fun findEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
+        val storedValue = redisTemplate.opsForValue().get(emailVerificationTokenKey(tokenId)) ?: return null
+        val parts = storedValue.split("\n")
+        if (parts.size != 3 || parts.any { it.isBlank() }) {
+            return null
+        }
+
+        return StoredEmailVerificationToken(
+            tokenId = tokenId,
+            userId = parts[0],
+            email = parts[1],
+            tokenHash = parts[2],
+            expiresAt = clock.instant(),
+        )
+    }
+
     override fun consumeEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
         val key = emailVerificationTokenKey(tokenId)
         val storedValue = redisTemplate.opsForValue().getAndDelete(key) ?: return null
