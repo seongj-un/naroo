@@ -6,6 +6,7 @@ import com.example.naroo.auth.port.`out`.StoredAccessToken
 import com.example.naroo.auth.port.`out`.StoredEmailVerificationToken
 import com.example.naroo.auth.port.`out`.StoredRefreshToken
 import com.example.naroo.auth.port.`out`.TokenStorePort
+import com.example.naroo.diagnostic.domain.MathArea
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -224,6 +225,109 @@ class UserLearningFlowSmokeTest(
         assertEquals("admin_test_concept", accepted.body.dataMap().string("conceptTag"))
     }
 
+    @Test
+    fun `every default math area can create its first recovery mission`() {
+        val accessToken = createVerifiedStudentAndLogin(
+            loginId = "content_matrix",
+            password = "Password123!",
+            email = "content-matrix@example.com",
+            nickname = "매트릭스",
+        )
+
+        val scenarios = listOf(
+            MathArea.EQUATION to "방정식이 어려워요",
+            MathArea.FUNCTION to "함수가 어려워요",
+            MathArea.GEOMETRY to "도형이 어려워요",
+            MathArea.PROBABILITY_AND_STATISTICS to "확률과 통계가 어려워요",
+            MathArea.SEQUENCE to "수열이 어려워요",
+        )
+
+        scenarios.forEach { (mathArea, note) ->
+            val startingPoint = post(
+                path = "/api/diagnostics/starting-point",
+                body = mapOf(
+                    "selectionType" to "WEAK_AREA",
+                    "mathArea" to mathArea.name,
+                    "note" to note,
+                ),
+                accessToken = accessToken,
+            )
+            assertEquals(
+                HttpStatus.CREATED.value(),
+                startingPoint.statusCode,
+                "starting point should be created for ${mathArea.name}",
+            )
+
+            val diagnosticSession = post(
+                path = "/api/diagnostics",
+                body = emptyMap<String, Any>(),
+                accessToken = accessToken,
+            )
+            assertEquals(
+                HttpStatus.CREATED.value(),
+                diagnosticSession.statusCode,
+                "diagnostic session should be created for ${mathArea.name}",
+            )
+            val diagnosticSessionId = diagnosticSession.body.dataMap().string("id")
+
+            val questions = exchange(
+                path = "/api/diagnostics/$diagnosticSessionId/questions",
+                method = HttpMethod.GET,
+                body = null,
+                accessToken = accessToken,
+            )
+            assertEquals(
+                HttpStatus.OK.value(),
+                questions.statusCode,
+                "questions should load for ${mathArea.name}",
+            )
+            val questionPayloads = questions.body.dataMap().mapList("questions")
+            assertEquals(2, questionPayloads.size, "expected 2 questions for ${mathArea.name}")
+
+            val submittedAnswers = post(
+                path = "/api/diagnostics/$diagnosticSessionId/answers",
+                body = mapOf(
+                    "answers" to questionPayloads.map { questionPayload ->
+                        mapOf(
+                            "questionId" to questionPayload.string("id"),
+                            "selectedChoiceId" to "unknown",
+                        )
+                    },
+                ),
+                accessToken = accessToken,
+            )
+            assertEquals(
+                HttpStatus.OK.value(),
+                submittedAnswers.statusCode,
+                "answers should submit for ${mathArea.name}",
+            )
+
+            val mission = post(
+                path = "/api/recovery-missions",
+                body = mapOf("diagnosticSessionId" to diagnosticSessionId),
+                accessToken = accessToken,
+            )
+            assertEquals(
+                HttpStatus.CREATED.value(),
+                mission.statusCode,
+                "recovery mission should be created for ${mathArea.name}",
+            )
+            assertEquals(
+                diagnosticSessionId,
+                mission.body.dataMap().string("diagnosticSessionId"),
+                "recovery mission should stay attached to the same diagnostic session for ${mathArea.name}",
+            )
+            assertTrue(
+                mission.body.dataMap().string("conceptTag").isNotBlank(),
+                "recovery mission concept should not be blank for ${mathArea.name}",
+            )
+            assertTrue(
+                mission.body.dataMap().string("title").isNotBlank(),
+                "recovery mission title should not be blank for ${mathArea.name}",
+            )
+        }
+    }
+
     private fun post(
         path: String,
         body: Any,
@@ -247,6 +351,33 @@ class UserLearningFlowSmokeTest(
         )
         assertEquals(HttpStatus.OK.value(), login.statusCode)
         return login.body.dataMap().string("accessToken")
+    }
+
+    private fun createVerifiedStudentAndLogin(
+        loginId: String,
+        password: String,
+        email: String,
+        nickname: String,
+    ): String {
+        val signUp = post(
+            path = "/api/auth/sign-up",
+            body = mapOf(
+                "loginId" to loginId,
+                "password" to password,
+                "email" to email,
+                "nickname" to nickname,
+                "mathStatus" to "UNKNOWN",
+            ),
+        )
+        assertEquals(HttpStatus.CREATED.value(), signUp.statusCode)
+
+        val verification = post(
+            path = "/api/auth/email/verify",
+            body = mapOf("token" to emailSender.latestTokenFor(email)),
+        )
+        assertEquals(HttpStatus.OK.value(), verification.statusCode)
+
+        return login(loginId, password)
     }
 
     private fun recoveryTemplateBody(): Map<String, Any> {
@@ -316,6 +447,13 @@ class UserLearningFlowSmokeTest(
     private fun Map<String, Any?>.list(key: String): List<Any?> {
         @Suppress("UNCHECKED_CAST")
         return this[key] as List<Any?>
+    }
+
+    private fun Map<String, Any?>.mapList(key: String): List<Map<String, Any?>> {
+        return list(key).map { value ->
+            @Suppress("UNCHECKED_CAST")
+            value as Map<String, Any?>
+        }
     }
 
     private fun Map<String, Any?>.string(key: String): String {
@@ -397,7 +535,15 @@ private class InMemorySmokeTokenStore : TokenStorePort {
         emailVerificationTokens[token.tokenId] = token
     }
 
+    override fun findEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
+        return emailVerificationTokens[tokenId]
+    }
+
     override fun consumeEmailVerificationToken(tokenId: String): StoredEmailVerificationToken? {
         return emailVerificationTokens.remove(tokenId)
+    }
+
+    override fun deleteEmailVerificationToken(tokenId: String) {
+        emailVerificationTokens.remove(tokenId)
     }
 }

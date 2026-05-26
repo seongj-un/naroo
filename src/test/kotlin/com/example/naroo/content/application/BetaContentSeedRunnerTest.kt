@@ -97,6 +97,18 @@ class BetaContentSeedRunnerTest {
         assertEquals(1, templateRepository.saved.size)
         assertEquals("equation_balance", templateRepository.saved.single().conceptTag)
     }
+
+    @Test
+    fun `every beta question concept has a matching recovery template`() {
+        val questionConcepts = BetaContentSeedRunner.BETA_QUESTIONS
+            .map { it.conceptTag }
+            .toSet()
+        val templateConcepts = BetaContentSeedRunner.BETA_RECOVERY_TEMPLATES
+            .map { it.conceptTag }
+            .toSet()
+
+        assertEquals(questionConcepts, templateConcepts)
+    }
 }
 
 private class CapturingDiagnosticQuestionRepository(

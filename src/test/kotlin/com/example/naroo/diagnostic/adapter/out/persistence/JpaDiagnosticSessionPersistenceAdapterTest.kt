@@ -24,6 +24,10 @@ class JpaDiagnosticSessionPersistenceAdapterTest(
 ) {
     @BeforeEach
     fun setUp() {
+        jdbcTemplate.update("delete from recovery_mission_submissions")
+        jdbcTemplate.update("delete from recovery_missions")
+        jdbcTemplate.update("delete from diagnostic_results")
+        jdbcTemplate.update("delete from diagnostic_answers")
         jdbcTemplate.update("delete from diagnostic_session_question_choices")
         jdbcTemplate.update("delete from diagnostic_session_questions")
         jdbcTemplate.update("delete from diagnostic_sessions")
