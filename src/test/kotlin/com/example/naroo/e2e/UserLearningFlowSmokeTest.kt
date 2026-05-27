@@ -45,6 +45,8 @@ class UserLearningFlowSmokeTest(
 
     @BeforeEach
     fun setUp() {
+        jdbcTemplate.update("delete from beta_tester_profiles")
+        jdbcTemplate.update("delete from beta_trust_aggregate_rows")
         jdbcTemplate.update("delete from beta_question_heatmap_rows")
         jdbcTemplate.update("delete from beta_funnel_rows")
         jdbcTemplate.update("delete from beta_events")
@@ -532,6 +534,166 @@ class UserLearningFlowSmokeTest(
         assertEquals(1, row.number("unknownAnswerCount").toInt())
         assertEquals(1, row.number("abandonedAfterQuestionCount").toInt())
         assertEquals(true, row["lowSampleWarning"])
+    }
+
+    @Test
+    fun `admin beta ops trust aggregate endpoint returns projected counts`() {
+        val studentAccessToken = createVerifiedStudentAndLogin(
+            loginId = "trust_aggregate_student",
+            password = "Password123!",
+            email = "trust-aggregate-student@example.com",
+            nickname = "신뢰집계학생",
+        )
+
+        val startingPoint = post(
+            path = "/api/diagnostics/starting-point",
+            body = mapOf(
+                "selectionType" to "WEAK_AREA",
+                "mathArea" to "FUNCTION",
+                "note" to "함수가 어려워요",
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), startingPoint.statusCode)
+
+        val diagnosticSession = post(
+            path = "/api/diagnostics",
+            body = emptyMap<String, Any>(),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), diagnosticSession.statusCode)
+        val diagnosticSessionId = diagnosticSession.body.dataMap().string("id")
+
+        val submittedAnswers = post(
+            path = "/api/diagnostics/$diagnosticSessionId/answers",
+            body = mapOf(
+                "answers" to listOf(
+                    mapOf("questionId" to "function-substitution-1", "selectedChoiceId" to "b"),
+                    mapOf("questionId" to "function-slope-1", "selectedChoiceId" to "unknown"),
+                ),
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.OK.value(), submittedAnswers.statusCode)
+
+        val trustFeedback = post(
+            path = "/api/diagnostics/$diagnosticSessionId/trust-feedback",
+            body = mapOf(
+                "feedbackChoice" to "FEELS_RIGHT",
+                "idempotencyKey" to "trust-aggregate-feedback:$diagnosticSessionId:1",
+                "occurredAt" to "2026-05-27T08:30:00Z",
+                "flowVariant" to "beta-v1",
+                "resultCopyVersion" to "result-copy-v1",
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.ACCEPTED.value(), trustFeedback.statusCode)
+
+        val adminToken = createAdminAndLogin(
+            loginId = "trust_aggregate_admin",
+            password = "Password123!",
+            email = "trust-aggregate-admin@example.com",
+            nickname = "신뢰집계관리자",
+        )
+
+        val aggregate = exchange(
+            path = "/api/admin/beta-ops/trust/aggregate",
+            method = HttpMethod.GET,
+            body = null,
+            accessToken = adminToken,
+        )
+        assertEquals(HttpStatus.OK.value(), aggregate.statusCode)
+        assertEquals(1, aggregate.body.dataMap().number("rowCount").toInt())
+        val row = aggregate.body.dataMap().mapList("rows").single()
+        assertEquals("FUNCTION", row.string("mathArea"))
+        assertEquals("result-copy-v1", row.string("resultCopyVersion"))
+        assertEquals("linear_function_slope", row.string("primaryRecoveryConcept"))
+        assertEquals(1, row.number("feedbackCount").toInt())
+        assertEquals(1, row.number("feelsRightCount").toInt())
+        assertEquals(1.0, row.number("feelsRightRate").toDouble())
+        assertEquals(true, row["lowSampleWarning"])
+    }
+
+    @Test
+    fun `admin beta ops tester profile endpoints upsert and list profiles`() {
+        val studentLoginId = "tester_profile_student"
+        val studentAccessToken = createVerifiedStudentAndLogin(
+            loginId = studentLoginId,
+            password = "Password123!",
+            email = "tester-profile-student@example.com",
+            nickname = "프로필학생",
+        )
+
+        val startingPoint = post(
+            path = "/api/diagnostics/starting-point",
+            body = mapOf(
+                "selectionType" to "WEAK_AREA",
+                "mathArea" to "FUNCTION",
+                "note" to "함수가 어려워요",
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), startingPoint.statusCode)
+
+        val diagnosticSession = post(
+            path = "/api/diagnostics",
+            body = emptyMap<String, Any>(),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), diagnosticSession.statusCode)
+        val diagnosticSessionId = diagnosticSession.body.dataMap().string("id")
+
+        val telemetry = post(
+            path = "/api/diagnostics/$diagnosticSessionId/telemetry",
+            body = mapOf(
+                "eventType" to "SESSION_ABANDONED",
+                "questionId" to "function-substitution-1",
+                "idempotencyKey" to "tester-profile-abandoned:$diagnosticSessionId:1",
+                "occurredAt" to "2026-05-27T23:00:00Z",
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.ACCEPTED.value(), telemetry.statusCode)
+
+        val adminToken = createAdminAndLogin(
+            loginId = "tester_profile_admin",
+            password = "Password123!",
+            email = "tester-profile-admin@example.com",
+            nickname = "프로필관리자",
+        )
+        val studentUserId = jdbcTemplate.queryForObject(
+            "select id from user_accounts where login_id = ?",
+            String::class.java,
+            studentLoginId,
+        )!!
+
+        val upsert = put(
+            path = "/api/admin/beta-ops/testers/$studentUserId/profile",
+            body = mapOf(
+                "cohortTag" to "friend-intro",
+                "targetMatch" to "TARGET",
+                "operatorNote" to "Q1까지는 왔지만 여기서 멈춤",
+            ),
+            accessToken = adminToken,
+        )
+        assertEquals(HttpStatus.OK.value(), upsert.statusCode)
+        assertEquals("friend-intro", upsert.body.dataMap().string("cohortTag"))
+        assertEquals("TARGET", upsert.body.dataMap().string("targetMatch"))
+
+        val testers = exchange(
+            path = "/api/admin/beta-ops/testers",
+            method = HttpMethod.GET,
+            body = null,
+            accessToken = adminToken,
+        )
+        assertEquals(HttpStatus.OK.value(), testers.statusCode)
+        val row = testers.body.dataMap().mapList("rows").first { it.string("userId") == studentUserId }
+        assertEquals("tester_profile_student", row.string("loginId"))
+        assertEquals("friend-intro", row.string("cohortTag"))
+        assertEquals("TARGET", row.string("targetMatch"))
+        assertEquals("Q1까지는 왔지만 여기서 멈춤", row.string("operatorNote"))
+        assertEquals(diagnosticSessionId, row.string("latestDiagnosticSessionId"))
+        assertEquals("DIAGNOSTIC_SESSION_ABANDONED", row.string("latestLastEventType"))
     }
 
     @Test

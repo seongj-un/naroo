@@ -169,4 +169,8 @@ private class CapturingBetaFunnelProjectionRepository : BetaFunnelProjectionRepo
         replaced = rows
         return rows
     }
+
+    override fun findAll(): List<BetaFunnelRow> {
+        return replaced
+    }
 }

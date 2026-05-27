@@ -27,9 +27,15 @@ class JpaBetaFunnelProjectionPersistenceAdapter(
         }
         return repository.saveAllAndFlush(rows.map(BetaFunnelRowJpaEntity::from)).map(BetaFunnelRowJpaEntity::toDomain)
     }
+
+    override fun findAll(): List<BetaFunnelRow> {
+        return repository.findAllByOrderByLastEventAtDesc().map(BetaFunnelRowJpaEntity::toDomain)
+    }
 }
 
-interface SpringDataBetaFunnelRowJpaRepository : JpaRepository<BetaFunnelRowJpaEntity, String>
+interface SpringDataBetaFunnelRowJpaRepository : JpaRepository<BetaFunnelRowJpaEntity, String> {
+    fun findAllByOrderByLastEventAtDesc(): List<BetaFunnelRowJpaEntity>
+}
 
 @Entity
 @Table(

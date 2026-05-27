@@ -4,4 +4,6 @@ import com.example.naroo.betaops.domain.BetaFunnelRow
 
 interface BetaFunnelProjectionRepositoryPort {
     fun replaceAll(rows: List<BetaFunnelRow>): List<BetaFunnelRow>
+
+    fun findAll(): List<BetaFunnelRow>
 }
