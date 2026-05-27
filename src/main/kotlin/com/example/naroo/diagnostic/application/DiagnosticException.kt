@@ -15,6 +15,8 @@ sealed class DiagnosticException : UseCaseException() {
 
     data object InvalidDiagnosticTelemetry : DiagnosticException()
 
+    data object InvalidDiagnosticTrustFeedback : DiagnosticException()
+
     data object DiagnosticAlreadyCompleted : DiagnosticException()
 
     data object DiagnosticResultNotReady : DiagnosticException()

@@ -284,6 +284,70 @@ class UserLearningFlowSmokeTest(
     }
 
     @Test
+    fun `diagnostic result trust feedback endpoint records beta event`() {
+        val accessToken = createVerifiedStudentAndLogin(
+            loginId = "trust_feedback_user",
+            password = "Password123!",
+            email = "trust-feedback@example.com",
+            nickname = "신뢰도",
+        )
+
+        val startingPoint = post(
+            path = "/api/diagnostics/starting-point",
+            body = mapOf(
+                "selectionType" to "WEAK_AREA",
+                "mathArea" to "FUNCTION",
+                "note" to "함수가 어려워요",
+            ),
+            accessToken = accessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), startingPoint.statusCode)
+
+        val diagnosticSession = post(
+            path = "/api/diagnostics",
+            body = emptyMap<String, Any>(),
+            accessToken = accessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), diagnosticSession.statusCode)
+        val diagnosticSessionId = diagnosticSession.body.dataMap().string("id")
+
+        val submittedAnswers = post(
+            path = "/api/diagnostics/$diagnosticSessionId/answers",
+            body = mapOf(
+                "answers" to listOf(
+                    mapOf("questionId" to "function-substitution-1", "selectedChoiceId" to "b"),
+                    mapOf("questionId" to "function-slope-1", "selectedChoiceId" to "unknown"),
+                ),
+            ),
+            accessToken = accessToken,
+        )
+        assertEquals(HttpStatus.OK.value(), submittedAnswers.statusCode)
+
+        val trustFeedback = post(
+            path = "/api/diagnostics/$diagnosticSessionId/trust-feedback",
+            body = mapOf(
+                "feedbackChoice" to "FEELS_RIGHT",
+                "idempotencyKey" to "trust-feedback:$diagnosticSessionId:1",
+                "occurredAt" to "2026-05-27T06:10:00Z",
+                "flowVariant" to "beta-v1",
+                "resultCopyVersion" to "result-copy-v1",
+            ),
+            accessToken = accessToken,
+        )
+        assertEquals(HttpStatus.ACCEPTED.value(), trustFeedback.statusCode)
+        assertEquals("APPENDED", trustFeedback.body.dataMap().string("outcome"))
+
+        val trustEvent = jdbcTemplate.queryForMap(
+            "select event_type, flow_variant, result_copy_version, payload_json from beta_events where diagnostic_session_id = ? and event_type = ?",
+            diagnosticSessionId,
+            "DIAGNOSTIC_RESULT_TRUST_FEEDBACK_SUBMITTED",
+        )
+        assertEquals("beta-v1", trustEvent["flow_variant"])
+        assertEquals("result-copy-v1", trustEvent["result_copy_version"])
+        assertTrue((trustEvent["payload_json"] as String).contains("\"feedbackChoice\":\"FEELS_RIGHT\""))
+    }
+
+    @Test
     fun `content write APIs require admin role`() {
         val loginId = "content_admin"
         val password = "Password123!"

@@ -26,6 +26,9 @@ object DiagnosticExceptionMapper {
             is DiagnosticException.InvalidDiagnosticTelemetry ->
                 ResponseEntity.badRequest().body(DiagnosticErrorCode.INVALID_DIAGNOSTIC_TELEMETRY.toWrappedDto())
 
+            is DiagnosticException.InvalidDiagnosticTrustFeedback ->
+                ResponseEntity.badRequest().body(DiagnosticErrorCode.INVALID_DIAGNOSTIC_TRUST_FEEDBACK.toWrappedDto())
+
             is DiagnosticException.DiagnosticAlreadyCompleted ->
                 ResponseEntity.status(HttpStatus.CONFLICT).body(DiagnosticErrorCode.DIAGNOSTIC_ALREADY_COMPLETED.toWrappedDto())
 

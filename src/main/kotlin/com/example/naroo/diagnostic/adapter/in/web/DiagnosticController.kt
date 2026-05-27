@@ -11,11 +11,15 @@ import com.example.naroo.diagnostic.port.`in`.CreateDiagnosticSessionCommand
 import com.example.naroo.diagnostic.port.`in`.CreateDiagnosticSessionUseCase
 import com.example.naroo.diagnostic.port.`in`.DiagnosticTelemetryEventType
 import com.example.naroo.diagnostic.port.`in`.DiagnosticTelemetryOutcome
+import com.example.naroo.diagnostic.port.`in`.DiagnosticResultTrustFeedbackChoice
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticResultCommand
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticResultUseCase
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsCommand
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsUseCase
 import com.example.naroo.diagnostic.port.`in`.RecordDiagnosticTelemetryCommand
+import com.example.naroo.diagnostic.port.`in`.RecordDiagnosticResultTrustFeedbackCommand
+import com.example.naroo.diagnostic.port.`in`.RecordDiagnosticResultTrustFeedbackUseCase
+import com.example.naroo.diagnostic.port.`in`.RecordedDiagnosticResultTrustFeedbackResult
 import com.example.naroo.diagnostic.port.`in`.RecordDiagnosticTelemetryUseCase
 import com.example.naroo.diagnostic.port.`in`.RecordedDiagnosticTelemetryResult
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointCommand
@@ -45,6 +49,7 @@ class DiagnosticController(
     private val submitDiagnosticAnswersUseCase: SubmitDiagnosticAnswersUseCase,
     private val getDiagnosticResultUseCase: GetDiagnosticResultUseCase,
     private val recordDiagnosticTelemetryUseCase: RecordDiagnosticTelemetryUseCase,
+    private val recordDiagnosticResultTrustFeedbackUseCase: RecordDiagnosticResultTrustFeedbackUseCase,
     private val businessStageBetaEventTracker: BusinessStageBetaEventTracker,
 ) {
     @PostMapping
@@ -189,6 +194,27 @@ class DiagnosticController(
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(result.toResponse().toWrappedDto())
     }
 
+    @PostMapping("/{diagnosticSessionId}/trust-feedback")
+    fun recordTrustFeedback(
+        @PathVariable diagnosticSessionId: String,
+        @RequestBody request: RecordDiagnosticResultTrustFeedbackRequest,
+    ): ResponseEntity<APiWrappedResponseDto<RecordDiagnosticResultTrustFeedbackResponse>> {
+        val authentication = verifiedAuthentication()
+        val result = recordDiagnosticResultTrustFeedbackUseCase.record(
+            RecordDiagnosticResultTrustFeedbackCommand(
+                userId = authentication.userId,
+                diagnosticSessionId = diagnosticSessionId,
+                feedbackChoice = request.feedbackChoice,
+                idempotencyKey = request.idempotencyKey,
+                occurredAt = request.occurredAt,
+                flowVariant = request.flowVariant,
+                resultCopyVersion = request.resultCopyVersion,
+            ),
+        )
+
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(result.toResponse().toWrappedDto())
+    }
+
     @GetMapping("/{diagnosticSessionId}/result")
     fun getResult(
         @PathVariable diagnosticSessionId: String,
@@ -235,6 +261,14 @@ class DiagnosticController(
         return RecordDiagnosticTelemetryResponse(
             diagnosticSessionId = diagnosticSessionId,
             eventType = eventType,
+            outcome = outcome,
+        )
+    }
+
+    private fun RecordedDiagnosticResultTrustFeedbackResult.toResponse(): RecordDiagnosticResultTrustFeedbackResponse {
+        return RecordDiagnosticResultTrustFeedbackResponse(
+            diagnosticSessionId = diagnosticSessionId,
+            feedbackChoice = feedbackChoice,
             outcome = outcome,
         )
     }
@@ -303,6 +337,14 @@ data class RecordDiagnosticTelemetryRequest(
     val flowVariant: String? = null,
 )
 
+data class RecordDiagnosticResultTrustFeedbackRequest(
+    val feedbackChoice: DiagnosticResultTrustFeedbackChoice,
+    val idempotencyKey: String,
+    val occurredAt: Instant,
+    val flowVariant: String? = null,
+    val resultCopyVersion: String? = null,
+)
+
 data class SubmitDiagnosticAnswersResponse(
     val diagnosticSessionId: String,
     val mathArea: MathArea,
@@ -319,6 +361,12 @@ data class SubmitDiagnosticAnswersResponse(
 data class RecordDiagnosticTelemetryResponse(
     val diagnosticSessionId: String,
     val eventType: DiagnosticTelemetryEventType,
+    val outcome: DiagnosticTelemetryOutcome,
+) : SuccessResponseDto
+
+data class RecordDiagnosticResultTrustFeedbackResponse(
+    val diagnosticSessionId: String,
+    val feedbackChoice: DiagnosticResultTrustFeedbackChoice,
     val outcome: DiagnosticTelemetryOutcome,
 ) : SuccessResponseDto
 
