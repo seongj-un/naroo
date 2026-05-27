@@ -3,7 +3,11 @@ package com.example.naroo.betaops.adapter.`in`.web
 import com.example.naroo.auth.adapter.`in`.web.JwtAuthentication
 import com.example.naroo.auth.application.AuthException
 import com.example.naroo.betaops.port.`in`.BetaFunnelOverviewResult
+import com.example.naroo.betaops.port.`in`.BetaQuestionHeatmapResult
+import com.example.naroo.betaops.port.`in`.BetaQuestionHeatmapRowResult
 import com.example.naroo.betaops.port.`in`.GetBetaFunnelOverviewUseCase
+import com.example.naroo.betaops.port.`in`.GetBetaQuestionHeatmapUseCase
+import com.example.naroo.diagnostic.domain.MathArea
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -46,6 +50,9 @@ class BetaOpsAdminControllerTest {
                     projectedAt = Instant.parse("2026-05-27T07:00:00Z"),
                 )
             },
+            getBetaQuestionHeatmapUseCase = GetBetaQuestionHeatmapUseCase {
+                error("heatmap should not be called")
+            },
             betaOpsAdminAuthorizer = BetaOpsAdminAuthorizer(),
         )
         authenticate(role = "ADMIN")
@@ -62,6 +69,9 @@ class BetaOpsAdminControllerTest {
             getBetaFunnelOverviewUseCase = GetBetaFunnelOverviewUseCase {
                 error("overview should not be called")
             },
+            getBetaQuestionHeatmapUseCase = GetBetaQuestionHeatmapUseCase {
+                error("heatmap should not be called")
+            },
             betaOpsAdminAuthorizer = BetaOpsAdminAuthorizer(),
         )
         authenticate(role = "STUDENT")
@@ -69,6 +79,50 @@ class BetaOpsAdminControllerTest {
         assertThrows(AuthException.Unauthorized::class.java) {
             controller.getFunnelOverview()
         }
+    }
+
+    @Test
+    fun `returns question heatmap for admin`() {
+        val controller = BetaOpsAdminController(
+            getBetaFunnelOverviewUseCase = GetBetaFunnelOverviewUseCase {
+                error("overview should not be called")
+            },
+            getBetaQuestionHeatmapUseCase = GetBetaQuestionHeatmapUseCase {
+                BetaQuestionHeatmapResult(
+                    rows = listOf(
+                        BetaQuestionHeatmapRowResult(
+                            questionId = "function-substitution-1",
+                            mathArea = MathArea.FUNCTION,
+                            conceptTag = "function_substitution",
+                            questionSnapshotVersion = 3,
+                            flowVariant = "beta-v1",
+                            displayOrder = 1,
+                            questionShownCount = 4,
+                            answerSelectedCount = 3,
+                            unknownAnswerCount = 1,
+                            abandonedAfterQuestionCount = 1,
+                            answerSelectionRate = 0.75,
+                            unknownSelectionRate = 0.25,
+                            abandonmentRate = 0.25,
+                            lowSampleWarning = true,
+                        ),
+                    ),
+                    rowCount = 1,
+                    projectionLagSeconds = 0,
+                    latestEventAt = Instant.parse("2026-05-27T07:08:00Z"),
+                    lastProjectedEventAt = Instant.parse("2026-05-27T07:08:00Z"),
+                    projectedAt = Instant.parse("2026-05-27T07:09:00Z"),
+                )
+            },
+            betaOpsAdminAuthorizer = BetaOpsAdminAuthorizer(),
+        )
+        authenticate(role = "ADMIN")
+
+        val response = controller.getQuestionHeatmap()
+
+        assertEquals(1, response.data?.rowCount)
+        assertEquals("function-substitution-1", response.data?.rows?.single()?.questionId)
+        assertEquals(4, response.data?.rows?.single()?.questionShownCount)
     }
 
     private fun authenticate(role: String) {

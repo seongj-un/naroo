@@ -45,6 +45,7 @@ class UserLearningFlowSmokeTest(
 
     @BeforeEach
     fun setUp() {
+        jdbcTemplate.update("delete from beta_question_heatmap_rows")
         jdbcTemplate.update("delete from beta_funnel_rows")
         jdbcTemplate.update("delete from beta_events")
         jdbcTemplate.update("delete from recovery_mission_submissions")
@@ -439,6 +440,98 @@ class UserLearningFlowSmokeTest(
         assertEquals(1, overview.body.dataMap().number("trustFeedbackCount").toInt())
         assertEquals(1, overview.body.dataMap().number("recoveryMissionCreatedCount").toInt())
         assertEquals(true, overview.body.dataMap()["lowSampleWarning"])
+    }
+
+    @Test
+    fun `admin beta ops question heatmap endpoint returns projected counts`() {
+        val studentAccessToken = createVerifiedStudentAndLogin(
+            loginId = "heatmap_student",
+            password = "Password123!",
+            email = "heatmap-student@example.com",
+            nickname = "히트맵학생",
+        )
+
+        val startingPoint = post(
+            path = "/api/diagnostics/starting-point",
+            body = mapOf(
+                "selectionType" to "WEAK_AREA",
+                "mathArea" to "FUNCTION",
+                "note" to "함수가 어려워요",
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), startingPoint.statusCode)
+
+        val diagnosticSession = post(
+            path = "/api/diagnostics",
+            body = emptyMap<String, Any>(),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), diagnosticSession.statusCode)
+        val diagnosticSessionId = diagnosticSession.body.dataMap().string("id")
+
+        val questionShown = post(
+            path = "/api/diagnostics/$diagnosticSessionId/telemetry",
+            body = mapOf(
+                "eventType" to "QUESTION_SHOWN",
+                "questionId" to "function-substitution-1",
+                "idempotencyKey" to "heatmap-question-shown:$diagnosticSessionId:1",
+                "occurredAt" to "2026-05-27T08:00:00Z",
+                "flowVariant" to "beta-v1",
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.ACCEPTED.value(), questionShown.statusCode)
+
+        val answerSelected = post(
+            path = "/api/diagnostics/$diagnosticSessionId/telemetry",
+            body = mapOf(
+                "eventType" to "ANSWER_SELECTED",
+                "questionId" to "function-substitution-1",
+                "selectedChoiceId" to "unknown",
+                "idempotencyKey" to "heatmap-answer-selected:$diagnosticSessionId:1",
+                "occurredAt" to "2026-05-27T08:00:05Z",
+                "flowVariant" to "beta-v1",
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.ACCEPTED.value(), answerSelected.statusCode)
+
+        val abandoned = post(
+            path = "/api/diagnostics/$diagnosticSessionId/telemetry",
+            body = mapOf(
+                "eventType" to "SESSION_ABANDONED",
+                "questionId" to "function-substitution-1",
+                "idempotencyKey" to "heatmap-abandoned:$diagnosticSessionId:1",
+                "occurredAt" to "2026-05-27T08:00:10Z",
+                "flowVariant" to "beta-v1",
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.ACCEPTED.value(), abandoned.statusCode)
+
+        val adminToken = createAdminAndLogin(
+            loginId = "heatmap_admin",
+            password = "Password123!",
+            email = "heatmap-admin@example.com",
+            nickname = "히트맵관리자",
+        )
+
+        val heatmap = exchange(
+            path = "/api/admin/beta-ops/questions/heatmap",
+            method = HttpMethod.GET,
+            body = null,
+            accessToken = adminToken,
+        )
+        assertEquals(HttpStatus.OK.value(), heatmap.statusCode)
+        assertEquals(1, heatmap.body.dataMap().number("rowCount").toInt())
+        val row = heatmap.body.dataMap().mapList("rows").single()
+        assertEquals("function-substitution-1", row.string("questionId"))
+        assertEquals(1, row.number("questionShownCount").toInt())
+        assertEquals(1, row.number("answerSelectedCount").toInt())
+        assertEquals(1, row.number("unknownAnswerCount").toInt())
+        assertEquals(1, row.number("abandonedAfterQuestionCount").toInt())
+        assertEquals(true, row["lowSampleWarning"])
     }
 
     @Test
