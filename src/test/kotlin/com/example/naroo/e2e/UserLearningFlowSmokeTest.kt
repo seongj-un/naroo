@@ -45,6 +45,7 @@ class UserLearningFlowSmokeTest(
 
     @BeforeEach
     fun setUp() {
+        jdbcTemplate.update("delete from beta_funnel_rows")
         jdbcTemplate.update("delete from beta_events")
         jdbcTemplate.update("delete from recovery_mission_submissions")
         jdbcTemplate.update("delete from recovery_missions")
@@ -348,6 +349,99 @@ class UserLearningFlowSmokeTest(
     }
 
     @Test
+    fun `admin beta ops funnel overview endpoint returns projected counts`() {
+        val studentAccessToken = createVerifiedStudentAndLogin(
+            loginId = "overview_student",
+            password = "Password123!",
+            email = "overview-student@example.com",
+            nickname = "오버뷰학생",
+        )
+
+        val startingPoint = post(
+            path = "/api/diagnostics/starting-point",
+            body = mapOf(
+                "selectionType" to "WEAK_AREA",
+                "mathArea" to "FUNCTION",
+                "note" to "함수가 어려워요",
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), startingPoint.statusCode)
+
+        val diagnosticSession = post(
+            path = "/api/diagnostics",
+            body = emptyMap<String, Any>(),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), diagnosticSession.statusCode)
+        val diagnosticSessionId = diagnosticSession.body.dataMap().string("id")
+
+        val telemetry = post(
+            path = "/api/diagnostics/$diagnosticSessionId/telemetry",
+            body = mapOf(
+                "eventType" to "QUESTION_SHOWN",
+                "questionId" to "function-substitution-1",
+                "idempotencyKey" to "question-shown:$diagnosticSessionId:1",
+                "occurredAt" to "2026-05-27T07:00:00Z",
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.ACCEPTED.value(), telemetry.statusCode)
+
+        val submittedAnswers = post(
+            path = "/api/diagnostics/$diagnosticSessionId/answers",
+            body = mapOf(
+                "answers" to listOf(
+                    mapOf("questionId" to "function-substitution-1", "selectedChoiceId" to "b"),
+                    mapOf("questionId" to "function-slope-1", "selectedChoiceId" to "unknown"),
+                ),
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.OK.value(), submittedAnswers.statusCode)
+
+        val trustFeedback = post(
+            path = "/api/diagnostics/$diagnosticSessionId/trust-feedback",
+            body = mapOf(
+                "feedbackChoice" to "FEELS_RIGHT",
+                "idempotencyKey" to "trust-feedback:$diagnosticSessionId:1",
+                "occurredAt" to "2026-05-27T07:01:00Z",
+            ),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.ACCEPTED.value(), trustFeedback.statusCode)
+
+        val recoveryMission = post(
+            path = "/api/recovery-missions",
+            body = mapOf("diagnosticSessionId" to diagnosticSessionId),
+            accessToken = studentAccessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), recoveryMission.statusCode)
+
+        val adminToken = createAdminAndLogin(
+            loginId = "beta_ops_admin",
+            password = "Password123!",
+            email = "beta-ops-admin@example.com",
+            nickname = "운영자",
+        )
+
+        val overview = exchange(
+            path = "/api/admin/beta-ops/funnel/overview",
+            method = HttpMethod.GET,
+            body = null,
+            accessToken = adminToken,
+        )
+        assertEquals(HttpStatus.OK.value(), overview.statusCode)
+        assertEquals(2, overview.body.dataMap().number("loginUserCount").toInt())
+        assertEquals(1, overview.body.dataMap().number("diagnosticSessionCreatedCount").toInt())
+        assertEquals(1, overview.body.dataMap().number("firstQuestionShownCount").toInt())
+        assertEquals(1, overview.body.dataMap().number("diagnosticSubmittedCount").toInt())
+        assertEquals(1, overview.body.dataMap().number("trustFeedbackCount").toInt())
+        assertEquals(1, overview.body.dataMap().number("recoveryMissionCreatedCount").toInt())
+        assertEquals(true, overview.body.dataMap()["lowSampleWarning"])
+    }
+
+    @Test
     fun `content write APIs require admin role`() {
         val loginId = "content_admin"
         val password = "Password123!"
@@ -536,6 +630,26 @@ class UserLearningFlowSmokeTest(
         )
         assertEquals(HttpStatus.OK.value(), verification.statusCode)
 
+        return login(loginId, password)
+    }
+
+    private fun createAdminAndLogin(
+        loginId: String,
+        password: String,
+        email: String,
+        nickname: String,
+    ): String {
+        post(
+            path = "/api/auth/sign-up",
+            body = mapOf(
+                "loginId" to loginId,
+                "password" to password,
+                "email" to email,
+                "nickname" to nickname,
+                "mathStatus" to "UNKNOWN",
+            ),
+        )
+        jdbcTemplate.update("update user_accounts set email_verified = true, role = 'ADMIN' where login_id = ?", loginId)
         return login(loginId, password)
     }
 

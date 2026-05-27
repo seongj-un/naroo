@@ -2,6 +2,7 @@ package com.example.naroo.betaops.adapter.`out`.persistence
 
 import com.example.naroo.betaops.domain.BetaEvent
 import com.example.naroo.betaops.domain.BetaEventType
+import com.example.naroo.betaops.port.`out`.BetaEventReadPort
 import com.example.naroo.betaops.port.`out`.BetaEventRepositoryPort
 import com.example.naroo.betaops.port.`out`.DuplicateBetaEventIdempotencyKeyException
 import com.example.naroo.diagnostic.domain.MathArea
@@ -20,7 +21,7 @@ import java.time.Instant
 @Repository
 class JpaBetaEventPersistenceAdapter(
     private val repository: SpringDataBetaEventJpaRepository,
-) : BetaEventRepositoryPort {
+) : BetaEventRepositoryPort, BetaEventReadPort {
     override fun save(event: BetaEvent): BetaEvent {
         try {
             return repository.saveAndFlush(BetaEventJpaEntity.from(event)).toDomain()
@@ -30,6 +31,10 @@ class JpaBetaEventPersistenceAdapter(
             }
             throw exception
         }
+    }
+
+    override fun findAllOrderByOccurredAtAscReceivedAtAsc(): List<BetaEvent> {
+        return repository.findAllByOrderByOccurredAtAscReceivedAtAsc().map(BetaEventJpaEntity::toDomain)
     }
 
     private fun matchesIdempotencyConstraint(exception: DataIntegrityViolationException): Boolean {
@@ -47,7 +52,9 @@ class JpaBetaEventPersistenceAdapter(
     }
 }
 
-interface SpringDataBetaEventJpaRepository : JpaRepository<BetaEventJpaEntity, String>
+interface SpringDataBetaEventJpaRepository : JpaRepository<BetaEventJpaEntity, String> {
+    fun findAllByOrderByOccurredAtAscReceivedAtAsc(): List<BetaEventJpaEntity>
+}
 
 @Entity
 @Table(

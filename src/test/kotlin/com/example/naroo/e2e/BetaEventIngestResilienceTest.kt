@@ -44,6 +44,8 @@ class BetaEventIngestResilienceTest(
 
     @BeforeEach
     fun setUp() {
+        jdbcTemplate.update("delete from beta_funnel_rows")
+        jdbcTemplate.update("delete from beta_events")
         jdbcTemplate.update("delete from recovery_mission_submissions")
         jdbcTemplate.update("delete from recovery_missions")
         jdbcTemplate.update("delete from diagnostic_results")
