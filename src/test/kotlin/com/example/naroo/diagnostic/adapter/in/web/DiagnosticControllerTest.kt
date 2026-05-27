@@ -12,11 +12,15 @@ import com.example.naroo.diagnostic.port.`in`.DiagnosticQuestionChoiceResult
 import com.example.naroo.diagnostic.port.`in`.DiagnosticQuestionResult
 import com.example.naroo.diagnostic.port.`in`.DiagnosticQuestionsResult
 import com.example.naroo.diagnostic.port.`in`.DiagnosticResultView
+import com.example.naroo.diagnostic.port.`in`.DiagnosticTelemetryEventType
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticResultCommand
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticResultUseCase
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsCommand
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsUseCase
 import com.example.naroo.diagnostic.port.`in`.NextMissionPreviewResult
+import com.example.naroo.diagnostic.port.`in`.RecordDiagnosticTelemetryCommand
+import com.example.naroo.diagnostic.port.`in`.RecordDiagnosticTelemetryUseCase
+import com.example.naroo.diagnostic.port.`in`.RecordedDiagnosticTelemetryResult
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointCommand
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointUseCase
 import com.example.naroo.diagnostic.port.`in`.SelectedStartingPointResult
@@ -25,6 +29,7 @@ import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersCommand
 import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersUseCase
 import com.example.naroo.diagnostic.port.`in`.SubmittedDiagnosticResult
 import com.example.naroo.support.noOpBusinessStageBetaEventTracker
+import com.example.naroo.support.noOpRecordDiagnosticTelemetryUseCase
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.AfterEach
@@ -67,6 +72,7 @@ class DiagnosticControllerTest {
             },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            recordDiagnosticTelemetryUseCase = noOpRecordDiagnosticTelemetryUseCase(),
             businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
@@ -90,6 +96,7 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            recordDiagnosticTelemetryUseCase = noOpRecordDiagnosticTelemetryUseCase(),
             businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
@@ -120,6 +127,7 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            recordDiagnosticTelemetryUseCase = noOpRecordDiagnosticTelemetryUseCase(),
             businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
@@ -142,6 +150,7 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            recordDiagnosticTelemetryUseCase = noOpRecordDiagnosticTelemetryUseCase(),
             businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
@@ -171,6 +180,7 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            recordDiagnosticTelemetryUseCase = noOpRecordDiagnosticTelemetryUseCase(),
             businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
         authenticate(emailVerified = true)
@@ -198,6 +208,7 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            recordDiagnosticTelemetryUseCase = noOpRecordDiagnosticTelemetryUseCase(),
             businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
@@ -236,6 +247,7 @@ class DiagnosticControllerTest {
                 )
             },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            recordDiagnosticTelemetryUseCase = noOpRecordDiagnosticTelemetryUseCase(),
             businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
         authenticate(emailVerified = true)
@@ -273,6 +285,48 @@ class DiagnosticControllerTest {
     }
 
     @Test
+    fun `record telemetry returns accepted response for verified user`() {
+        var capturedCommand: RecordDiagnosticTelemetryCommand? = null
+        val controller = DiagnosticController(
+            SelectStartingPointUseCase { error("select starting point should not be called") },
+            CreateDiagnosticSessionUseCase { error("create diagnostic session should not be called") },
+            GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
+            SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
+            GetDiagnosticResultUseCase { error("get result should not be called") },
+            recordDiagnosticTelemetryUseCase = RecordDiagnosticTelemetryUseCase { command ->
+                capturedCommand = command
+                RecordedDiagnosticTelemetryResult(
+                    diagnosticSessionId = command.diagnosticSessionId,
+                    eventType = command.eventType,
+                    outcome = com.example.naroo.diagnostic.port.`in`.DiagnosticTelemetryOutcome.APPENDED,
+                )
+            },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
+        )
+        authenticate(emailVerified = true)
+
+        val response = controller.recordTelemetry(
+            diagnosticSessionId = "diagnostic-session-1",
+            request = RecordDiagnosticTelemetryRequest(
+                eventType = DiagnosticTelemetryEventType.QUESTION_SHOWN,
+                questionId = "function-substitution-1",
+                idempotencyKey = "question-shown:1",
+                occurredAt = Instant.parse("2026-05-27T06:00:00Z"),
+                flowVariant = "beta-v1",
+            ),
+        )
+
+        assertEquals(HttpStatus.ACCEPTED, response.statusCode)
+        assertEquals("user-1", capturedCommand?.userId)
+        assertEquals("diagnostic-session-1", capturedCommand?.diagnosticSessionId)
+        assertEquals(DiagnosticTelemetryEventType.QUESTION_SHOWN, capturedCommand?.eventType)
+        assertEquals("function-substitution-1", capturedCommand?.questionId)
+        assertEquals("question-shown:1", capturedCommand?.idempotencyKey)
+        assertEquals("beta-v1", capturedCommand?.flowVariant)
+        assertEquals("APPENDED", response.body?.data?.outcome?.name)
+    }
+
+    @Test
     fun `get result returns diagnostic result with next mission preview`() {
         var capturedCommand: GetDiagnosticResultCommand? = null
         val controller = DiagnosticController(
@@ -301,6 +355,7 @@ class DiagnosticControllerTest {
                     ),
                 )
             },
+            recordDiagnosticTelemetryUseCase = noOpRecordDiagnosticTelemetryUseCase(),
             businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
         authenticate(emailVerified = true)

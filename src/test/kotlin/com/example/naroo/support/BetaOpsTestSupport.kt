@@ -3,6 +3,7 @@ package com.example.naroo.support
 import com.example.naroo.betaops.application.service.AppendBetaEventService
 import com.example.naroo.betaops.application.service.BusinessStageBetaEventTracker
 import com.example.naroo.betaops.port.`out`.BetaEventRepositoryPort
+import com.example.naroo.diagnostic.port.`in`.RecordDiagnosticTelemetryUseCase
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import java.time.Clock
@@ -21,4 +22,10 @@ fun noOpBusinessStageBetaEventTracker(): BusinessStageBetaEventTracker {
         ),
         clock = clock,
     )
+}
+
+fun noOpRecordDiagnosticTelemetryUseCase(): RecordDiagnosticTelemetryUseCase {
+    return RecordDiagnosticTelemetryUseCase {
+        error("record diagnostic telemetry should not be called")
+    }
 }

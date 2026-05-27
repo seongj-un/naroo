@@ -196,6 +196,94 @@ class UserLearningFlowSmokeTest(
     }
 
     @Test
+    fun `diagnostic telemetry endpoint records per question beta events`() {
+        val accessToken = createVerifiedStudentAndLogin(
+            loginId = "telemetry_user",
+            password = "Password123!",
+            email = "telemetry@example.com",
+            nickname = "텔레메트리",
+        )
+
+        val startingPoint = post(
+            path = "/api/diagnostics/starting-point",
+            body = mapOf(
+                "selectionType" to "WEAK_AREA",
+                "mathArea" to "FUNCTION",
+                "note" to "함수가 어려워요",
+            ),
+            accessToken = accessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), startingPoint.statusCode)
+
+        val diagnosticSession = post(
+            path = "/api/diagnostics",
+            body = emptyMap<String, Any>(),
+            accessToken = accessToken,
+        )
+        assertEquals(HttpStatus.CREATED.value(), diagnosticSession.statusCode)
+        val diagnosticSessionId = diagnosticSession.body.dataMap().string("id")
+
+        val questions = exchange(
+            path = "/api/diagnostics/$diagnosticSessionId/questions",
+            method = HttpMethod.GET,
+            body = null,
+            accessToken = accessToken,
+        )
+        assertEquals(HttpStatus.OK.value(), questions.statusCode)
+        val firstQuestionId = questions.body.dataMap().mapList("questions").first().string("id")
+
+        val questionShown = post(
+            path = "/api/diagnostics/$diagnosticSessionId/telemetry",
+            body = mapOf(
+                "eventType" to "QUESTION_SHOWN",
+                "questionId" to firstQuestionId,
+                "idempotencyKey" to "question-shown:$diagnosticSessionId:1",
+                "occurredAt" to "2026-05-27T06:00:00Z",
+                "flowVariant" to "beta-v1",
+            ),
+            accessToken = accessToken,
+        )
+        assertEquals(HttpStatus.ACCEPTED.value(), questionShown.statusCode)
+
+        val answerSelected = post(
+            path = "/api/diagnostics/$diagnosticSessionId/telemetry",
+            body = mapOf(
+                "eventType" to "ANSWER_SELECTED",
+                "questionId" to firstQuestionId,
+                "selectedChoiceId" to "b",
+                "idempotencyKey" to "answer-selected:$diagnosticSessionId:1",
+                "occurredAt" to "2026-05-27T06:00:05Z",
+            ),
+            accessToken = accessToken,
+        )
+        assertEquals(HttpStatus.ACCEPTED.value(), answerSelected.statusCode)
+
+        val sessionAbandoned = post(
+            path = "/api/diagnostics/$diagnosticSessionId/telemetry",
+            body = mapOf(
+                "eventType" to "SESSION_ABANDONED",
+                "questionId" to firstQuestionId,
+                "idempotencyKey" to "session-abandoned:$diagnosticSessionId:1",
+                "occurredAt" to "2026-05-27T06:00:10Z",
+            ),
+            accessToken = accessToken,
+        )
+        assertEquals(HttpStatus.ACCEPTED.value(), sessionAbandoned.statusCode)
+
+        assertEquals(6, jdbcTemplate.queryForObject("select count(*) from beta_events", Int::class.java))
+
+        val telemetryEvents = jdbcTemplate.queryForList(
+            "select event_type, question_id, flow_variant from beta_events where diagnostic_session_id = ? order by occurred_at asc",
+            diagnosticSessionId,
+        )
+        assertEquals(4, telemetryEvents.size)
+        assertTrue(telemetryEvents.any { row -> row["event_type"] == "DIAGNOSTIC_SESSION_CREATED" })
+        assertTrue(telemetryEvents.any { row -> row["event_type"] == "DIAGNOSTIC_QUESTION_SHOWN" && row["flow_variant"] == "beta-v1" })
+        assertTrue(telemetryEvents.any { row -> row["event_type"] == "DIAGNOSTIC_ANSWER_SELECTED" && row["question_id"] == firstQuestionId })
+        assertTrue(telemetryEvents.any { row -> row["event_type"] == "DIAGNOSTIC_SESSION_ABANDONED" && row["question_id"] == firstQuestionId })
+    }
+
+    @Test
     fun `content write APIs require admin role`() {
         val loginId = "content_admin"
         val password = "Password123!"

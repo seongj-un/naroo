@@ -9,10 +9,15 @@ import com.example.naroo.diagnostic.domain.MathArea
 import com.example.naroo.diagnostic.domain.StartingPointSelectionType
 import com.example.naroo.diagnostic.port.`in`.CreateDiagnosticSessionCommand
 import com.example.naroo.diagnostic.port.`in`.CreateDiagnosticSessionUseCase
+import com.example.naroo.diagnostic.port.`in`.DiagnosticTelemetryEventType
+import com.example.naroo.diagnostic.port.`in`.DiagnosticTelemetryOutcome
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticResultCommand
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticResultUseCase
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsCommand
 import com.example.naroo.diagnostic.port.`in`.GetDiagnosticQuestionsUseCase
+import com.example.naroo.diagnostic.port.`in`.RecordDiagnosticTelemetryCommand
+import com.example.naroo.diagnostic.port.`in`.RecordDiagnosticTelemetryUseCase
+import com.example.naroo.diagnostic.port.`in`.RecordedDiagnosticTelemetryResult
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointCommand
 import com.example.naroo.diagnostic.port.`in`.SelectStartingPointUseCase
 import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswerCommand
@@ -39,6 +44,7 @@ class DiagnosticController(
     private val getDiagnosticQuestionsUseCase: GetDiagnosticQuestionsUseCase,
     private val submitDiagnosticAnswersUseCase: SubmitDiagnosticAnswersUseCase,
     private val getDiagnosticResultUseCase: GetDiagnosticResultUseCase,
+    private val recordDiagnosticTelemetryUseCase: RecordDiagnosticTelemetryUseCase,
     private val businessStageBetaEventTracker: BusinessStageBetaEventTracker,
 ) {
     @PostMapping
@@ -161,6 +167,28 @@ class DiagnosticController(
         )
     }
 
+    @PostMapping("/{diagnosticSessionId}/telemetry")
+    fun recordTelemetry(
+        @PathVariable diagnosticSessionId: String,
+        @RequestBody request: RecordDiagnosticTelemetryRequest,
+    ): ResponseEntity<APiWrappedResponseDto<RecordDiagnosticTelemetryResponse>> {
+        val authentication = verifiedAuthentication()
+        val result = recordDiagnosticTelemetryUseCase.record(
+            RecordDiagnosticTelemetryCommand(
+                userId = authentication.userId,
+                diagnosticSessionId = diagnosticSessionId,
+                eventType = request.eventType,
+                questionId = request.questionId,
+                idempotencyKey = request.idempotencyKey,
+                occurredAt = request.occurredAt,
+                selectedChoiceId = request.selectedChoiceId,
+                flowVariant = request.flowVariant,
+            ),
+        )
+
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(result.toResponse().toWrappedDto())
+    }
+
     @GetMapping("/{diagnosticSessionId}/result")
     fun getResult(
         @PathVariable diagnosticSessionId: String,
@@ -201,6 +229,14 @@ class DiagnosticController(
             throw DiagnosticException.EmailVerificationRequired
         }
         return authentication
+    }
+
+    private fun RecordedDiagnosticTelemetryResult.toResponse(): RecordDiagnosticTelemetryResponse {
+        return RecordDiagnosticTelemetryResponse(
+            diagnosticSessionId = diagnosticSessionId,
+            eventType = eventType,
+            outcome = outcome,
+        )
     }
 }
 
@@ -258,6 +294,15 @@ data class SubmitDiagnosticAnswerRequest(
     val selectedChoiceId: String,
 )
 
+data class RecordDiagnosticTelemetryRequest(
+    val eventType: DiagnosticTelemetryEventType,
+    val questionId: String,
+    val idempotencyKey: String,
+    val occurredAt: Instant,
+    val selectedChoiceId: String? = null,
+    val flowVariant: String? = null,
+)
+
 data class SubmitDiagnosticAnswersResponse(
     val diagnosticSessionId: String,
     val mathArea: MathArea,
@@ -269,6 +314,12 @@ data class SubmitDiagnosticAnswersResponse(
     val weakLinks: List<String>,
     val primaryRecoveryConcept: String,
     val summary: String,
+) : SuccessResponseDto
+
+data class RecordDiagnosticTelemetryResponse(
+    val diagnosticSessionId: String,
+    val eventType: DiagnosticTelemetryEventType,
+    val outcome: DiagnosticTelemetryOutcome,
 ) : SuccessResponseDto
 
 data class DiagnosticResultResponse(
