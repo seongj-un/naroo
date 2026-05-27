@@ -2,9 +2,6 @@ name: Backend Deploy Railway
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 jobs:
   test:
