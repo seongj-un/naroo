@@ -2,6 +2,7 @@ package com.example.naroo.recovery.adapter.`in`.web
 
 import com.example.naroo.auth.adapter.`in`.web.JwtAuthentication
 import com.example.naroo.auth.application.AuthException
+import com.example.naroo.betaops.application.service.BusinessStageBetaEventTracker
 import com.example.naroo.diagnostic.application.DiagnosticException
 import com.example.naroo.infrastructure.web.dto.APiWrappedResponseDto
 import com.example.naroo.infrastructure.web.dto.SuccessResponseDto
@@ -34,6 +35,7 @@ class RecoveryMissionController(
     private val getRecoveryMissionUseCase: GetRecoveryMissionUseCase,
     private val completeRecoveryMissionUseCase: CompleteRecoveryMissionUseCase,
     private val submitRecoveryMissionUseCase: SubmitRecoveryMissionUseCase,
+    private val businessStageBetaEventTracker: BusinessStageBetaEventTracker,
 ) {
     @PostMapping
     fun create(
@@ -46,6 +48,7 @@ class RecoveryMissionController(
                 diagnosticSessionId = request.diagnosticSessionId,
             ),
         )
+        businessStageBetaEventTracker.recoveryMissionCreated(authentication.userId, result)
 
         return ResponseEntity.status(HttpStatus.CREATED).body(result.toResponse().toWrappedDto())
     }
@@ -93,6 +96,7 @@ class RecoveryMissionController(
                 answerText = request.answerText,
             ),
         )
+        businessStageBetaEventTracker.recoveryMissionSubmitted(authentication.userId, result)
 
         return ResponseEntity.status(HttpStatus.CREATED).body(result.toResponse().toWrappedDto())
     }

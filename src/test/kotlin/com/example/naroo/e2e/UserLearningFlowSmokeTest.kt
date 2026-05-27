@@ -29,7 +29,12 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.ConcurrentHashMap
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = [
+        "naroo.beta-ops.mode=shadow",
+    ],
+)
 class UserLearningFlowSmokeTest(
     @Autowired private val jdbcTemplate: JdbcTemplate,
     @Autowired private val emailSender: CapturingSmokeEmailSender,
@@ -40,6 +45,7 @@ class UserLearningFlowSmokeTest(
 
     @BeforeEach
     fun setUp() {
+        jdbcTemplate.update("delete from beta_events")
         jdbcTemplate.update("delete from recovery_mission_submissions")
         jdbcTemplate.update("delete from recovery_missions")
         jdbcTemplate.update("delete from diagnostic_results")
@@ -186,6 +192,7 @@ class UserLearningFlowSmokeTest(
         assertEquals("RECOVERY_SERIES_COMPLETED", home.body.dataMap().string("nextAction"))
         assertEquals("COMPLETED", home.body.dataMap().map("latestMission").string("status"))
         assertEquals(1, home.body.dataMap().map("progress").number("completedMissionCount").toInt())
+        assertEquals(6, jdbcTemplate.queryForObject("select count(*) from beta_events", Int::class.java))
     }
 
     @Test

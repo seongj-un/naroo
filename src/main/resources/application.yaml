@@ -52,6 +52,8 @@ naroo:
       password: ${NAROO_SEED_STUDENT_PASSWORD:password123}
       nickname: ${NAROO_SEED_STUDENT_NICKNAME:나루}
       math-status: ${NAROO_SEED_STUDENT_MATH_STATUS:UNKNOWN}
+  beta-ops:
+    mode: ${NAROO_BETA_OPS_MODE:disabled}
 
 management:
   endpoints:

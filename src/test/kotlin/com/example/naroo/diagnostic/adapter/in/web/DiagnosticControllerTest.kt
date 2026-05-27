@@ -24,6 +24,7 @@ import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswerCommand
 import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersCommand
 import com.example.naroo.diagnostic.port.`in`.SubmitDiagnosticAnswersUseCase
 import com.example.naroo.diagnostic.port.`in`.SubmittedDiagnosticResult
+import com.example.naroo.support.noOpBusinessStageBetaEventTracker
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.AfterEach
@@ -66,6 +67,7 @@ class DiagnosticControllerTest {
             },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
         authenticate(emailVerified = true)
@@ -88,6 +90,7 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
         authenticate(emailVerified = false)
@@ -117,6 +120,7 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
         authenticate(emailVerified = true)
@@ -138,6 +142,7 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
         authenticate(emailVerified = false)
@@ -166,6 +171,7 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
         authenticate(emailVerified = true)
 
@@ -192,6 +198,7 @@ class DiagnosticControllerTest {
             GetDiagnosticQuestionsUseCase { error("get questions should not be called") },
             SubmitDiagnosticAnswersUseCase { error("submit answers should not be called") },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
         authenticate(emailVerified = false)
@@ -229,6 +236,7 @@ class DiagnosticControllerTest {
                 )
             },
             GetDiagnosticResultUseCase { error("get result should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
         authenticate(emailVerified = true)
 
@@ -293,6 +301,7 @@ class DiagnosticControllerTest {
                     ),
                 )
             },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
         authenticate(emailVerified = true)
 

@@ -16,6 +16,7 @@ import com.example.naroo.auth.port.`in`.SignUpUserUseCase
 import com.example.naroo.auth.port.`in`.VerifiedEmailResult
 import com.example.naroo.auth.port.`in`.VerifyEmailCommand
 import com.example.naroo.auth.port.`in`.VerifyEmailUseCase
+import com.example.naroo.support.noOpBusinessStageBetaEventTracker
 import com.example.naroo.user.domain.MathStatus
 import com.example.naroo.user.domain.UserId
 import org.junit.jupiter.api.AfterEach
@@ -52,6 +53,7 @@ class AuthControllerTest {
             ReissueTokenUseCase { error("reissue should not be called") },
             VerifyEmailUseCase { error("verify email should not be called") },
             ResendEmailVerificationUseCase { error("resend email should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
         val response = controller.signUp(
@@ -101,6 +103,7 @@ class AuthControllerTest {
             ReissueTokenUseCase { error("reissue should not be called") },
             VerifyEmailUseCase { error("verify email should not be called") },
             ResendEmailVerificationUseCase { error("resend email should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
         val response = controller.login(
@@ -152,6 +155,7 @@ class AuthControllerTest {
             ReissueTokenUseCase { error("reissue should not be called") },
             VerifyEmailUseCase { error("verify email should not be called") },
             ResendEmailVerificationUseCase { error("resend email should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
             refreshCookieSecure = false,
         )
 
@@ -185,6 +189,7 @@ class AuthControllerTest {
             },
             VerifyEmailUseCase { error("verify email should not be called") },
             ResendEmailVerificationUseCase { error("resend email should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
         val response = controller.reissue("refresh-token")
@@ -226,6 +231,7 @@ class AuthControllerTest {
             ReissueTokenUseCase { error("reissue should not be called") },
             VerifyEmailUseCase { error("verify email should not be called") },
             ResendEmailVerificationUseCase { error("resend email should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
             refreshCookieSameSite = "None",
         )
 
@@ -256,6 +262,7 @@ class AuthControllerTest {
                 )
             },
             ResendEmailVerificationUseCase { error("resend email should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
 
         val response = controller.verifyEmail(VerifyEmailRequest(token = "email-token"))
@@ -284,6 +291,7 @@ class AuthControllerTest {
                     nextRetryAt = Instant.parse("2026-05-21T07:00:00Z"),
                 )
             },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
         authenticate(emailVerified = false)
 

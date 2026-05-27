@@ -12,6 +12,7 @@ import com.example.naroo.recovery.port.`in`.RecoveryMissionResult
 import com.example.naroo.recovery.port.`in`.RecoveryMissionSubmissionResult
 import com.example.naroo.recovery.port.`in`.SubmitRecoveryMissionCommand
 import com.example.naroo.recovery.port.`in`.SubmitRecoveryMissionUseCase
+import com.example.naroo.support.noOpBusinessStageBetaEventTracker
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -37,6 +38,7 @@ class RecoveryMissionControllerTest {
             getRecoveryMissionUseCase = GetRecoveryMissionUseCase { error("get should not be called") },
             completeRecoveryMissionUseCase = CompleteRecoveryMissionUseCase { error("complete should not be called") },
             submitRecoveryMissionUseCase = SubmitRecoveryMissionUseCase { error("submit should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
         authenticate(emailVerified = true)
 
@@ -60,6 +62,7 @@ class RecoveryMissionControllerTest {
             },
             completeRecoveryMissionUseCase = CompleteRecoveryMissionUseCase { error("complete should not be called") },
             submitRecoveryMissionUseCase = SubmitRecoveryMissionUseCase { error("submit should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
         authenticate(emailVerified = true)
 
@@ -84,6 +87,7 @@ class RecoveryMissionControllerTest {
                 )
             },
             submitRecoveryMissionUseCase = SubmitRecoveryMissionUseCase { error("submit should not be called") },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
         authenticate(emailVerified = true)
 
@@ -116,6 +120,7 @@ class RecoveryMissionControllerTest {
                     ),
                 )
             },
+            businessStageBetaEventTracker = noOpBusinessStageBetaEventTracker(),
         )
         authenticate(emailVerified = true)
 

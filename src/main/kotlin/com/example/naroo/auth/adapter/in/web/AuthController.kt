@@ -11,6 +11,7 @@ import com.example.naroo.auth.port.`in`.SignUpUserCommand
 import com.example.naroo.auth.port.`in`.SignUpUserUseCase
 import com.example.naroo.auth.port.`in`.VerifyEmailCommand
 import com.example.naroo.auth.port.`in`.VerifyEmailUseCase
+import com.example.naroo.betaops.application.service.BusinessStageBetaEventTracker
 import com.example.naroo.infrastructure.web.dto.APiWrappedResponseDto
 import com.example.naroo.infrastructure.web.dto.SuccessResponseDto
 import com.example.naroo.infrastructure.web.dto.toWrappedDto
@@ -35,6 +36,7 @@ class AuthController(
     private val reissueTokenUseCase: ReissueTokenUseCase,
     private val verifyEmailUseCase: VerifyEmailUseCase,
     private val resendEmailVerificationUseCase: ResendEmailVerificationUseCase,
+    private val businessStageBetaEventTracker: BusinessStageBetaEventTracker,
     @Value("\${naroo.auth.refresh-cookie-secure:true}")
     private val refreshCookieSecure: Boolean = true,
     @Value("\${naroo.auth.refresh-cookie-same-site:Strict}")
@@ -75,6 +77,7 @@ class AuthController(
                 password = request.password,
             ),
         )
+        businessStageBetaEventTracker.loginSucceeded(result)
 
         return ResponseEntity.ok()
             .header("Set-Cookie", refreshTokenCookie(result.refreshToken, result.refreshTokenExpiresAt).toString())

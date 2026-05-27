@@ -2,6 +2,7 @@ package com.example.naroo.diagnostic.adapter.`in`.web
 
 import com.example.naroo.auth.adapter.`in`.web.JwtAuthentication
 import com.example.naroo.auth.application.AuthException
+import com.example.naroo.betaops.application.service.BusinessStageBetaEventTracker
 import com.example.naroo.diagnostic.application.DiagnosticException
 import com.example.naroo.diagnostic.domain.DiagnosticSessionStatus
 import com.example.naroo.diagnostic.domain.MathArea
@@ -38,6 +39,7 @@ class DiagnosticController(
     private val getDiagnosticQuestionsUseCase: GetDiagnosticQuestionsUseCase,
     private val submitDiagnosticAnswersUseCase: SubmitDiagnosticAnswersUseCase,
     private val getDiagnosticResultUseCase: GetDiagnosticResultUseCase,
+    private val businessStageBetaEventTracker: BusinessStageBetaEventTracker,
 ) {
     @PostMapping
     fun createDiagnosticSession(): ResponseEntity<APiWrappedResponseDto<CreateDiagnosticSessionResponse>> {
@@ -45,6 +47,7 @@ class DiagnosticController(
         val result = createDiagnosticSessionUseCase.create(
             CreateDiagnosticSessionCommand(userId = authentication.userId),
         )
+        businessStageBetaEventTracker.diagnosticSessionCreated(result)
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
             CreateDiagnosticSessionResponse(
@@ -74,6 +77,7 @@ class DiagnosticController(
                 note = request.note,
             ),
         )
+        businessStageBetaEventTracker.startingPointSelected(result)
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
             SelectStartingPointResponse(
@@ -139,6 +143,7 @@ class DiagnosticController(
                 },
             ),
         )
+        businessStageBetaEventTracker.diagnosticAnswersSubmitted(authentication.userId, result)
 
         return ResponseEntity.ok(
             SubmitDiagnosticAnswersResponse(
